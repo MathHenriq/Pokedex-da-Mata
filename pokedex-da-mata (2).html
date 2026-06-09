@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pokédex da Mata</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23040a07'/%3E%3Cpath d='M32 8c11 8 18 18 18 29 0 10-8 19-18 19s-18-9-18-19C14 26 21 16 32 8Z' fill='%233ef0a0'/%3E%3Cpath d='M32 15v36M22 31c5 1 8 4 10 8M42 25c-5 2-8 6-10 12' stroke='%23040a07' stroke-width='4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{
+  --bg-0:#040a07;
+  --bg-1:#06100b;
+  --glow-primary:#3ef0a0;
+  --glow-secondary:#22d3ee;
+  --glow-warm:#c8f06b;
+  --text:#e8f5ee;
+  --text-dim:#7e9c8c;
+  --surface:rgba(18,38,28,0.55);
+  --surface-line:rgba(255,255,255,0.10);
+  --danger:#f0723e;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg-0);color:var(--text);font-family:'Hanken Grotesk',sans-serif;min-height:100vh;overflow-x:hidden;position:relative;transition:background .6s}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;transition:.6s;background:radial-gradient(60% 50% at 18% 8%, color-mix(in srgb, var(--glow-primary) 14%, transparent), transparent 60%),radial-gradient(50% 40% at 88% 22%, color-mix(in srgb, var(--glow-secondary) 12%, transparent), transparent 60%),radial-gradient(70% 60% at 50% 110%, color-mix(in srgb, var(--glow-primary) 9%, transparent), transparent 55%),linear-gradient(180deg,var(--bg-1),var(--bg-0))}
+body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{position:relative;z-index:1;max-width:580px;margin:0 auto;padding:0 20px 120px;min-height:100vh;display:flex;flex-direction:column}
+.screen{display:none}
+.screen.active{display:flex;flex-direction:column;animation:fade .45s ease}
+header{padding:40px 0 18px;text-align:center;position:relative}
+.spark{position:absolute;width:14px;height:14px;opacity:.5}
+.spark svg{width:100%;height:100%;display:block}
+.spark.s1{top:36px;left:6px;color:var(--glow-secondary)}
+.spark.s2{top:74px;right:12px;color:var(--glow-warm)}
+.eyebrow{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--glow-primary);opacity:.85}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(40px,11vw,58px);line-height:1.02;letter-spacing:-.02em;margin:10px 0 8px;padding-top:.12em;background:linear-gradient(140deg,#fff,var(--glow-primary) 60%,var(--glow-secondary));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:var(--text-dim);font-size:14px;max-width:340px;margin:0 auto;line-height:1.5}
+.cat-grid{margin-top:30px;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.theme-card{
+  position:relative;aspect-ratio:3/4;border-radius:22px;cursor:pointer;overflow:hidden;isolation:isolate;
+  background:linear-gradient(168deg, #0c1a12, #04100a);
+  border:1px solid color-mix(in srgb,var(--c) 20%, var(--surface-line));
+  box-shadow:0 18px 40px -28px #000;
+  transition:transform .45s cubic-bezier(.2,.7,.2,1), border-color .3s, box-shadow .45s;
+}
+/* foto real, ocupa o card inteiro, translúcida e tingida com a cor do tema */
+.tc-photo{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transform:scale(1.08);
+  filter:saturate(1.05) contrast(1.02) brightness(.92);
+  transition:opacity .9s ease, transform .8s cubic-bezier(.2,.7,.2,1), filter .5s;
+}
+.tc-photo.loaded{opacity:.78}
+.theme-card:hover .tc-photo{transform:scale(1.14);opacity:.92;filter:saturate(1.15) brightness(1)}
+/* lavagem de cor do tema sobre a foto + escurecimento para leitura */
+.theme-card::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:soft-light;
+  background:radial-gradient(120% 90% at 50% 12%, color-mix(in srgb,var(--c) 70%, transparent), transparent 60%),
+            radial-gradient(90% 80% at 90% 100%, color-mix(in srgb,var(--c2) 55%, transparent), transparent 65%);
+  opacity:.65;
+}
+.theme-card::after{
+  content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg, rgba(4,10,7,.35) 0%, transparent 32%, rgba(4,10,7,.45) 60%, rgba(4,10,7,.94) 100%);
+}
+.theme-card:hover{transform:translateY(-5px);border-color:color-mix(in srgb,var(--c) 60%, transparent);
+  box-shadow:0 40px 70px -30px color-mix(in srgb,var(--c) 60%, transparent), 0 0 0 1px color-mix(in srgb,var(--c) 35%, transparent) inset}
+.theme-card:active{transform:translateY(-1px) scale(.985)}
+
+.tc-meta{position:absolute;top:13px;left:15px;right:15px;z-index:4;display:flex;justify-content:space-between;align-items:baseline;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.2em;text-transform:uppercase;pointer-events:none;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.tc-kingdom{color:#dff3e8;opacity:.9}
+.tc-num{color:var(--c);font-weight:700;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--c) 70%, transparent))}
+
+.tc-corner{position:absolute;width:15px;height:15px;z-index:3;border:1px solid color-mix(in srgb,var(--c) 65%, transparent);opacity:.8}
+.tc-corner.bl{bottom:11px;left:11px;border-right:0;border-top:0;border-radius:0 0 0 4px}
+.tc-corner.tr{top:30px;right:11px;border-left:0;border-bottom:0;border-radius:0 4px 0 0}
+
+.tc-text{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:16px 17px 17px}
+.tc-divider{width:22px;height:2px;background:var(--c);margin-bottom:9px;box-shadow:0 0 12px var(--c);border-radius:2px}
+.tc-name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.05;letter-spacing:-.01em;margin-bottom:4px;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8)}
+.tc-desc{font-size:11.5px;color:#bcd4c7;line-height:1.4;text-shadow:0 1px 8px rgba(0,0,0,.7)}
+.bar{display:flex;align-items:center;gap:12px;padding:28px 0 6px}
+.back{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--surface-line);color:var(--text);cursor:pointer;flex-shrink:0;transition:transform .15s}
+.back:active{transform:translateX(-3px)}
+.back svg{width:18px;height:18px}
+.bar-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1}
+.bar-sub{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow-primary);margin-top:3px}
+.warn{margin-top:14px;border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.45;color:#f0c5a0;background:rgba(240,114,62,.08);border:1px solid rgba(240,114,62,.22);display:flex;gap:9px;align-items:flex-start}
+.warn svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:var(--danger)}
+.capture-card{margin-top:16px;border-radius:26px;padding:26px 22px 24px;text-align:center;background:var(--surface);border:1px solid var(--surface-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 30px 80px -40px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.04);position:relative;overflow:hidden}
+.corner{position:absolute;width:34px;height:34px;border:1.5px solid var(--glow-primary);opacity:.4}
+.corner.tl{top:14px;left:14px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
+.corner.br{bottom:14px;right:14px;border-left:0;border-top:0;border-radius:0 0 8px 0}
+.lens{width:114px;height:114px;margin:4px auto 18px;border-radius:50%;position:relative;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%, color-mix(in srgb,var(--glow-primary) 20%,transparent), rgba(4,10,7,.6) 70%);border:1px solid var(--surface-line)}
+.lens::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:1px dashed color-mix(in srgb,var(--glow-primary) 30%,transparent);animation:spin 22s linear infinite}
+.lens svg{width:44px;height:44px;color:var(--glow-primary);filter:drop-shadow(0 0 10px var(--glow-primary))}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cap-title{font-family:'Fraunces',serif;font-size:20px;font-weight:600;margin-bottom:4px}
+.cap-hint{color:var(--text-dim);font-size:13px;margin-bottom:20px}
+.btn-row{display:flex;gap:10px}
+.btn{flex:1;border:none;border-radius:14px;padding:15px 12px;cursor:pointer;font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s,box-shadow .25s}
+.btn svg{width:18px;height:18px}
+.btn-primary{background:linear-gradient(135deg,var(--glow-primary),var(--glow-secondary));color:#04140d;box-shadow:0 14px 34px -14px var(--glow-primary)}
+.btn-primary:active{transform:translateY(2px)}
+.btn-ghost{background:color-mix(in srgb,var(--glow-primary) 6%,transparent);color:var(--text);border:1px solid var(--surface-line)}
+.btn-ghost:active{transform:translateY(2px)}
+input[type=file]{display:none}
+.stage{margin-top:20px}
+.preview-wrap{position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--surface-line);background:#000;display:none}
+.preview-wrap.show{display:block;animation:fade .4s ease}
+.preview-wrap img{width:100%;display:block;max-height:340px;object-fit:cover}
+.scan{position:absolute;inset:0;display:none}
+.scan.on{display:block}
+.scan-line{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--glow-primary),transparent);box-shadow:0 0 18px var(--glow-primary);animation:scan 1.6s ease-in-out infinite}
+.scan-veil{position:absolute;inset:0;background:rgba(4,10,7,.45)}
+@keyframes scan{0%{top:4%}50%{top:94%}100%{top:4%}}
+.analysing{display:none;text-align:center;margin-top:16px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow-primary)}
+.analysing.on{display:block;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+.result{margin-top:18px;display:none}
+.result.show{display:block}
+.result .card{border-radius:22px;padding:22px;background:var(--surface);border:1px solid var(--surface-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.r-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px}
+.r-name{font-family:'Fraunces',serif;font-size:28px;font-weight:900;line-height:1.04;letter-spacing:-.02em}
+.r-sci{font-family:'Space Mono',monospace;font-size:13px;color:var(--glow-secondary);font-style:italic;margin-top:2px}
+.badge{flex-shrink:0;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;padding:6px 11px;border-radius:999px;border:1px solid var(--surface-line);color:var(--glow-primary);background:color-mix(in srgb,var(--glow-primary) 8%,transparent);white-space:nowrap}
+.r-section{margin-top:18px}
+.r-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--text-dim);margin-bottom:9px;display:flex;align-items:center;gap:8px}
+.r-label::after{content:"";flex:1;height:1px;background:var(--surface-line)}
+.conservation{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--glow-primary);box-shadow:0 0 10px var(--glow-primary)}
+.facts{list-style:none;display:flex;flex-direction:column;gap:11px}
+.facts li{position:relative;padding-left:20px;font-size:14.5px;line-height:1.5;color:#d4e8de}
+.facts li::before{content:"";position:absolute;left:0;top:8px;width:7px;height:7px;border-radius:2px;transform:rotate(45deg);background:var(--glow-warm)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13px;padding:7px 13px;border-radius:10px;background:color-mix(in srgb,var(--glow-secondary) 7%,transparent);border:1px solid color-mix(in srgb,var(--glow-secondary) 18%,transparent);color:#cdeef5}
+.reveal{opacity:0;transform:translateY(10px);animation:rise .5s forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.uncertain{border-radius:22px;padding:26px 22px;text-align:center;background:rgba(240,114,62,.06);border:1px solid rgba(240,114,62,.25)}
+.uncertain .ic{width:46px;height:46px;margin:0 auto 12px;color:var(--danger)}
+.uncertain h3{font-family:'Fraunces',serif;font-size:20px;margin-bottom:6px}
+.uncertain p{color:var(--text-dim);font-size:14px;line-height:1.5}
+.again{margin-top:16px;width:100%;border:1px solid var(--surface-line);background:color-mix(in srgb,var(--glow-primary) 5%,transparent);color:var(--text);border-radius:14px;padding:14px;font-family:'Hanken Grotesk';font-weight:700;font-size:14px;cursor:pointer}
+.again:active{transform:translateY(2px)}
+.album{margin-top:38px}
+.album-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.album-head h2{font-family:'Fraunces',serif;font-size:22px;font-weight:600}
+.album-count{font-family:'Space Mono',monospace;font-size:12px;color:var(--glow-primary)}
+.album-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.album-empty{color:var(--text-dim);font-size:13px;text-align:center;padding:24px;border:1px dashed var(--surface-line);border-radius:16px}
+.album-item{border-radius:14px;overflow:hidden;border:1px solid var(--surface-line);background:var(--surface);position:relative;aspect-ratio:1}
+.album-item img{width:100%;height:100%;object-fit:cover;opacity:.92}
+.album-item span{position:absolute;left:0;right:0;bottom:0;padding:14px 8px 6px;font-size:10.5px;font-weight:600;line-height:1.15;background:linear-gradient(transparent,rgba(4,10,7,.92));text-align:center}
+.gear{position:fixed;top:16px;right:16px;z-index:30;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--surface-line);color:var(--text-dim);cursor:pointer;backdrop-filter:blur(8px)}
+.gear svg{width:19px;height:19px}
+.modal{position:fixed;inset:0;z-index:40;background:rgba(2,6,4,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:22px}
+.modal.show{display:flex;animation:fade .25s}
+.modal-card{width:100%;max-width:420px;background:var(--bg-1);border:1px solid var(--surface-line);border-radius:22px;padding:26px}
+.modal-card h3{font-family:'Fraunces',serif;font-size:22px;margin-bottom:6px}
+.modal-card p{color:var(--text-dim);font-size:13px;line-height:1.5;margin-bottom:16px}
+.modal-card p a{color:var(--glow-secondary)}
+.modal-card input{width:100%;background:color-mix(in srgb,var(--glow-primary) 5%,transparent);border:1px solid var(--surface-line);border-radius:12px;padding:14px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;margin-bottom:14px}
+.modal-card input:focus{outline:none;border-color:var(--glow-primary)}
+.modal-actions{display:flex;gap:10px}
+.modal-actions .btn{flex:1}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);z-index:50;background:var(--bg-1);border:1px solid var(--surface-line);color:var(--text);padding:13px 20px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 20px 50px -20px #000}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);opacity:.6}
+
+/* ============ ABAS (Sobre / Localização / Habitat) ============ */
+.tabs{display:flex;gap:6px;margin:18px -4px 0;padding:5px;background:rgba(0,0,0,.28);border:1px solid var(--surface-line);border-radius:14px}
+.tab{flex:1;border:none;background:transparent;color:var(--text-dim);font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:12.5px;padding:10px 6px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.25s;letter-spacing:.01em}
+.tab svg{width:14px;height:14px}
+.tab.active{background:linear-gradient(135deg,color-mix(in srgb,var(--glow-primary) 22%,transparent),color-mix(in srgb,var(--glow-secondary) 22%,transparent));color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--glow-primary) 40%,transparent),0 6px 20px -10px var(--glow-primary)}
+.tab-panel{display:none;animation:fade .35s ease}
+.tab-panel.on{display:block}
+
+/* ============ LOCALIZAÇÃO (mapa real Leaflet) ============ */
+.map-box{margin-top:16px;height:340px;border-radius:18px;overflow:hidden;border:1px solid var(--surface-line);background:#06121a;box-shadow:0 26px 64px -42px #000, inset 0 0 0 1px rgba(255,255,255,.03)}
+.leaflet-container{background:#06121a;font-family:'Hanken Grotesk',sans-serif}
+.leaflet-control-zoom a{background:rgba(4,10,7,.82)!important;color:var(--text)!important;border-color:var(--surface-line)!important;backdrop-filter:blur(6px)}
+.leaflet-control-zoom a:hover{background:rgba(10,24,16,.96)!important}
+.leaflet-tooltip{background:rgba(4,10,7,.94);border:1px solid var(--surface-line);color:var(--text);border-radius:9px;box-shadow:0 8px 24px -10px #000;font-size:12px;padding:5px 10px}
+.leaflet-tooltip-top::before{border-top-color:rgba(4,10,7,.94)}
+.biome-marker{display:block;width:16px;height:16px;border-radius:50%;background:var(--mc);border:2px solid #04140d;box-shadow:0 0 0 4px color-mix(in srgb,var(--mc) 26%,transparent),0 0 16px var(--mc)}
+.biome-marker.primary{width:20px;height:20px;animation:mpulse 2s ease-in-out infinite}
+@keyframes mpulse{0%,100%{box-shadow:0 0 0 4px color-mix(in srgb,var(--mc) 30%,transparent),0 0 14px var(--mc)}50%{box-shadow:0 0 0 10px color-mix(in srgb,var(--mc) 10%,transparent),0 0 28px var(--mc)}}
+.map-note{margin-top:12px;font-size:13px;line-height:1.5;color:var(--text-dim)}
+.map-note strong{color:var(--text);font-weight:700}
+.map-fallback{display:grid;place-items:center;height:100%;color:var(--text-dim);font-size:13px;padding:20px;text-align:center}
+.map-legend2{margin-top:14px;padding:13px 15px 15px;border-radius:14px;background:var(--surface);border:1px solid var(--surface-line)}
+.legend-title{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px}
+.legend-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px}
+.legend-item{display:flex;align-items:center;gap:9px;font-size:12.5px;opacity:.4;transition:.2s}
+.legend-item.on{opacity:1;font-weight:700}
+.legend-swatch{width:14px;height:14px;border-radius:4px;flex-shrink:0;box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}
+.legend-item.on .legend-swatch{box-shadow:0 0 12px var(--lc),0 0 0 1px rgba(255,255,255,.18) inset}
+.regions-row{margin-top:14px}
+.regions-row .r-label{margin-bottom:8px}
+.regions-list{display:flex;flex-wrap:wrap;gap:7px}
+.region-pill{font-size:12.5px;padding:6px 11px;border-radius:999px;background:color-mix(in srgb,var(--glow-primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--glow-primary) 24%,transparent);color:var(--text);display:inline-flex;align-items:center;gap:6px}
+.region-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--glow-primary);box-shadow:0 0 8px var(--glow-primary)}
+
+/* ============ HABITAT (cena fotográfica real) ============ */
+.scene{position:relative;margin-top:16px;border-radius:22px;overflow:hidden;border:1px solid var(--surface-line);aspect-ratio:3/2;background:#04100a;box-shadow:0 30px 72px -42px #000}
+.scene-photo{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;transform:scale(1.04);transition:filter 1.1s ease, transform 9s ease}
+.scene:hover .scene-photo{transform:scale(1.11)}
+.scene-tint{position:absolute;inset:0;z-index:1;mix-blend-mode:soft-light;pointer-events:none;transition:background 1.1s ease}
+.scene-vignette{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(125% 95% at 50% 32%,transparent 42%,rgba(0,0,0,.55));box-shadow:inset 0 0 130px rgba(0,0,0,.45)}
+.scene-stars{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity 1.2s ease;background-repeat:no-repeat;background-image:
+  radial-gradient(1.4px 1.4px at 18% 22%,#fff,transparent),radial-gradient(1px 1px at 67% 14%,#dfeaff,transparent),
+  radial-gradient(1.6px 1.6px at 41% 12%,#fff,transparent),radial-gradient(1px 1px at 84% 30%,#fff,transparent),
+  radial-gradient(1.2px 1.2px at 55% 24%,#eef4ff,transparent),radial-gradient(1px 1px at 30% 8%,#fff,transparent),
+  radial-gradient(1.5px 1.5px at 92% 9%,#fff,transparent),radial-gradient(1px 1px at 9% 38%,#fff,transparent),
+  radial-gradient(1.1px 1.1px at 74% 40%,#fff,transparent)}
+.scene.night .scene-stars{opacity:.85}
+.fauna-tag{position:absolute;z-index:5;transform:translate(-50%,-50%);border:none;background:none;padding:0;cursor:pointer}
+.fauna-dot{width:15px;height:15px;border-radius:50%;background:var(--glow-primary);box-shadow:0 0 0 4px color-mix(in srgb,var(--glow-primary) 30%,transparent),0 0 18px var(--glow-primary);animation:fpulse 1.7s ease-in-out infinite;margin:0 auto}
+@keyframes fpulse{50%{transform:scale(1.4)}}
+.fauna-label{position:absolute;left:50%;bottom:22px;transform:translateX(-50%) translateY(4px);background:rgba(4,10,7,.94);border:1px solid var(--surface-line);padding:7px 11px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;transition:.22s;color:var(--text);backdrop-filter:blur(6px)}
+.fauna-tag:hover .fauna-label,.fauna-tag.show .fauna-label{opacity:1;transform:translateX(-50%) translateY(0)}
+.scene-overlay{position:absolute;left:0;right:0;bottom:0;z-index:6;padding:20px 16px 15px;background:linear-gradient(180deg,transparent,rgba(4,10,7,.94) 78%);color:var(--text)}
+.scene-bioma{font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow-primary);margin-bottom:5px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.scene-titulo{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.15;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+.scene-controls{position:absolute;top:12px;right:12px;z-index:6;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:62%}
+.scene-controls button{padding:7px 11px;border-radius:999px;border:1px solid var(--surface-line);background:rgba(4,10,7,.62);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);letter-spacing:.03em;transition:.2s}
+.scene-controls button.on{background:linear-gradient(135deg,color-mix(in srgb,var(--glow-primary) 38%,transparent),color-mix(in srgb,var(--glow-secondary) 38%,transparent));border-color:transparent}
+.habitat-info{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hinfo{padding:13px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--surface-line)}
+.hinfo .lbl{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+.hinfo .val{font-size:13.5px;line-height:1.4;color:var(--text)}
+.habitat-desc{margin-top:12px;padding:14px;border-radius:14px;background:color-mix(in srgb,var(--glow-primary) 5%,transparent);border:1px solid color-mix(in srgb,var(--glow-primary) 18%,transparent);font-size:14px;line-height:1.55;color:#d4e8de}
+.companions{margin-top:12px}
+.comp-list{display:flex;flex-wrap:wrap;gap:7px}
+.comp{font-size:12.5px;padding:6px 11px;border-radius:10px;background:color-mix(in srgb,var(--glow-warm) 7%,transparent);border:1px solid color-mix(in srgb,var(--glow-warm) 22%,transparent);color:#eff0c5}
+</style>
+</head>
+<body>
+
+<div class="gear" id="gear" title="Configurar chave">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+</div>
+
+<div class="app">
+
+  <!-- ===================== TELA: CATÁLOGO ===================== -->
+  <div class="screen active" id="screenCatalog">
+    <header>
+      <span class="spark s1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg></span>
+      <span class="spark s2"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg></span>
+      <div class="eyebrow">Núcleo WIT · Catálogo de campo</div>
+      <h1>Pokédex<br>da Mata</h1>
+      <p class="subtitle">Dez lentes pra reconhecer o que vive, cresce e voa pelo Brasil.</p>
+    </header>
+    <div class="cat-grid" id="catGrid"></div>
+    <footer>Floresta + Tecnologia · IA de visão</footer>
+  </div>
+
+  <!-- ===================== TELA: IDENTIFICAR ===================== -->
+  <div class="screen" id="screenIdentify">
+    <div class="bar">
+      <button class="back" id="btnBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div>
+        <div class="bar-title" id="barTitle">—</div>
+        <div class="bar-sub" id="barSub">—</div>
+      </div>
+    </div>
+
+    <div class="warn" id="warnBox" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <span id="warnText"></span>
+    </div>
+
+    <div class="capture-card">
+      <span class="corner tl"></span><span class="corner br"></span>
+      <div class="lens">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="cap-title">Pronto pra descobrir?</div>
+      <div class="cap-hint">Tire uma foto ou envie uma imagem da galeria.</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnCam">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Tirar foto
+        </button>
+        <button class="btn btn-ghost" id="btnGallery">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Galeria
+        </button>
+      </div>
+      <input type="file" id="fileCam" accept="image/*" capture="environment">
+      <input type="file" id="fileGal" accept="image/*">
+    </div>
+
+    <div class="stage">
+      <div class="preview-wrap" id="previewWrap">
+        <img id="preview" alt="">
+        <div class="scan" id="scan"><div class="scan-veil"></div><div class="scan-line"></div></div>
+      </div>
+      <div class="analysing" id="analysing">Analisando imagem…</div>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <div class="album">
+      <div class="album-head">
+        <h2>Álbum de descobertas</h2>
+        <span class="album-count" id="albumCount">0 espécies</span>
+      </div>
+      <div id="albumBody"><div class="album-empty">Suas identificações aparecem aqui.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <h3>Chave da API Gemini</h3>
+    <p>Cole aqui a chave do grupo. Pegue uma gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. A chave fica só neste dispositivo.</p>
+    <input type="password" id="keyInput" placeholder="AIza...">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="keyCancel">Cancelar</button>
+      <button class="btn btn-primary" id="keySave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CATÁLOGO DE TEMAS — cada item é um app possível.
+   Pra criar um novo tema, copie um objeto e troque os campos.
+   ============================================================ */
+const TEMAS = [
+  { id:"aves", nome:"Aves do Brasil", desc:"Pássaros e aves nativas",
+    alvo:"ave brasileira", especialista:"um ornitólogo brasileiro especialista nas aves do Brasil",
+    cor:"#3ef0a0", cor2:"#22d3ee" },
+
+  { id:"frutas", nome:"Frutas Brasileiras", desc:"Frutas nativas e tropicais",
+    alvo:"fruta", especialista:"um engenheiro agrônomo especialista em frutas brasileiras e tropicais",
+    cor:"#ff9f45", cor2:"#ffd24a" },
+
+  { id:"arvores", nome:"Árvores Nativas", desc:"Espécies da flora brasileira",
+    alvo:"árvore", especialista:"um dendrólogo especialista em árvores nativas do Brasil",
+    cor:"#5fcf6e", cor2:"#c8f06b" },
+
+  { id:"medicinais", nome:"Plantas Medicinais", desc:"Ervas e usos tradicionais",
+    alvo:"planta medicinal", especialista:"um etnobotânico especialista em plantas medicinais brasileiras",
+    cor:"#4fe0b5", cor2:"#8ef0d0",
+    aviso:"As informações são educativas. Nunca use uma planta como remédio sem orientação de um profissional de saúde." },
+
+  { id:"insetos", nome:"Insetos", desc:"A fauna invisível da mata",
+    alvo:"inseto", especialista:"um entomólogo especialista na fauna de insetos do Brasil",
+    cor:"#aef03e", cor2:"#e0f04a" },
+
+  { id:"cogumelos", nome:"Cogumelos e Fungos", desc:"Espécies do reino fungi",
+    alvo:"cogumelo ou fungo", especialista:"um micólogo especialista em fungos e cogumelos",
+    cor:"#f0765e", cor2:"#f0a05e",
+    aviso:"NUNCA consuma um cogumelo identificado por aplicativo. Espécies tóxicas se parecem com comestíveis." },
+
+  { id:"mamiferos", nome:"Mamíferos", desc:"Bichos da fauna brasileira",
+    alvo:"mamífero", especialista:"um mastozoólogo especialista nos mamíferos da fauna brasileira",
+    cor:"#f0b24a", cor2:"#f0d24a" },
+
+  { id:"repteis", nome:"Répteis e Anfíbios", desc:"Cobras, lagartos e sapos",
+    alvo:"réptil ou anfíbio", especialista:"um herpetólogo especialista em répteis e anfíbios do Brasil. Sempre informe se a espécie é peçonhenta",
+    cor:"#7ef03e", cor2:"#3ef0a0",
+    aviso:"Em caso de picada, procure atendimento médico imediato. Nunca manuseie o animal." },
+
+  { id:"flores", nome:"Flores", desc:"Plantas ornamentais e silvestres",
+    alvo:"flor", especialista:"um botânico especialista em flores e plantas ornamentais",
+    cor:"#f06ec0", cor2:"#f0a0d8" },
+
+  { id:"peixes", nome:"Peixes de Rio", desc:"Fauna de água doce",
+    alvo:"peixe de água doce", especialista:"um ictiólogo especialista em peixes de água doce brasileiros",
+    cor:"#4aa8f0", cor2:"#3ed8f0" }
+];
+
+const MODELO = "gemini-2.5-flash";   // troque por "gemini-2.5-flash-lite" pra mais requisições/dia
+const LIMIAR_CONFIANCA = 80;
+
+// COLE SUA CHAVE AQUI pra enviar o app já configurado aos colegas.
+// Deixe "" se NÃO quiser embutir (aí cada um cola a sua na engrenagem).
+const CHAVE_PADRAO = "AIzaSyASYecwfIVUN-TV1IBvV7788cKR8Zk-qQY";
+/* ============================================================ */
+
+let API_KEY = "";
+try { API_KEY = localStorage.getItem("gemini_key") || ""; } catch(e){}
+if(!API_KEY) API_KEY = CHAVE_PADRAO;
+
+let TEMA = null;
+const album = [];
+
+const $ = id => document.getElementById(id);
+const SPARK = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>';
+const esperar = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const REINO = {
+  aves:"Animalia · Aves", insetos:"Animalia · Insecta", mamiferos:"Animalia · Mammalia",
+  repteis:"Animalia · Reptilia", peixes:"Animalia · Pisces",
+  frutas:"Plantae · Fructus", arvores:"Plantae · Arbor", medicinais:"Plantae · Officinalis",
+  flores:"Plantae · Flora", cogumelos:"Fungi · Basidiomycota"
+};
+
+/* Foto real de cada categoria — banco Unsplash (alta qualidade, CC0).
+   São URLs diretas e estáveis; cada uma é uma foto escolhida a dedo. */
+const FOTO_TEMA = {
+  aves:      "photo-1552728089-57bdde30beb3", // arara-azul
+  frutas:    "photo-1490885578174-acda8905c2c6", // frutas tropicais
+  arvores:   "photo-1448375240586-882707db888b", // floresta / copas
+  medicinais:"photo-1466692476868-aef1dfb1e735", // ervas / folhas
+  insetos:   "photo-1528518075085-9b611b334e85", // macro de inseto
+  cogumelos: "photo-1629457442277-918387fec70c", // cogumelos na mata
+  mamiferos: "photo-1602491453631-e2a5ad90a131", // onça-pintada
+  repteis:   "photo-1531386151447-fd76ad50012f", // serpente
+  flores:    "photo-1490750967868-88aa4486c946", // flores
+  peixes:    "photo-1535591273668-578e31182c4f"  // peixes / água
+};
+function fotoTema(id){
+  const pid = FOTO_TEMA[id];
+  return pid ? `https://images.unsplash.com/${pid}?auto=format&fit=crop&w=600&h=800&q=70` : "";
+}
+
+function renderCatalog(){
+  $("catGrid").innerHTML = TEMAS.map((t,i)=>`
+    <div class="theme-card" style="--c:${t.cor};--c2:${t.cor2||t.cor}" onclick="abrirTema('${t.id}')">
+      <img class="tc-photo" src="${fotoTema(t.id)}" alt="" loading="lazy"
+           onload="this.classList.add('loaded')" onerror="this.remove()">
+      <div class="tc-meta">
+        <span class="tc-kingdom">${REINO[t.id]||"Naturae"}</span>
+        <span class="tc-num">N°${String(i+1).padStart(2,'0')}</span>
+      </div>
+      <span class="tc-corner tr"></span>
+      <span class="tc-corner bl"></span>
+      <div class="tc-text">
+        <div class="tc-divider"></div>
+        <div class="tc-name">${t.nome}</div>
+        <div class="tc-desc">${t.desc}</div>
+      </div>
+    </div>`).join("");
+}
+
+function abrirTema(id){
+  TEMA = TEMAS.find(t=>t.id===id);
+  const r = document.documentElement.style;
+  r.setProperty("--glow-primary", TEMA.cor);
+  r.setProperty("--glow-secondary", TEMA.cor2);
+  r.setProperty("--glow-warm", TEMA.cor2);
+  $("barTitle").textContent = TEMA.nome;
+  $("barSub").textContent = "Identificando: "+TEMA.alvo;
+  if(TEMA.aviso){ $("warnText").textContent = TEMA.aviso; $("warnBox").style.display="flex"; }
+  else $("warnBox").style.display="none";
+  $("result").classList.remove("show");
+  $("previewWrap").classList.remove("show");
+  $("screenCatalog").classList.remove("active");
+  $("screenIdentify").classList.add("active");
+  window.scrollTo({top:0});
+}
+
+$("btnBack").onclick = ()=>{
+  $("screenIdentify").classList.remove("active");
+  $("screenCatalog").classList.add("active");
+  window.scrollTo({top:0});
+};
+
+let toastT;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
+
+$("gear").onclick = ()=>{ $("keyInput").value=API_KEY; $("modal").classList.add("show"); };
+$("keyCancel").onclick = ()=> $("modal").classList.remove("show");
+$("keySave").onclick = ()=>{ API_KEY=$("keyInput").value.trim(); try{localStorage.setItem("gemini_key",API_KEY);}catch(e){} $("modal").classList.remove("show"); toast(API_KEY?"Chave salva.":"Chave removida."); };
+
+$("btnCam").onclick = ()=> requireKey() && $("fileCam").click();
+$("btnGallery").onclick = ()=> requireKey() && $("fileGal").click();
+$("fileCam").onchange = e => handleFile(e.target.files[0]);
+$("fileGal").onchange = e => handleFile(e.target.files[0]);
+function requireKey(){ if(!API_KEY){ $("modal").classList.add("show"); toast("Configure a chave da API primeiro."); return false; } return true; }
+
+async function handleFile(file){
+  if(!file) return;
+  const dataUrl = await readAsDataURL(file);
+  $("preview").src = dataUrl;
+  $("previewWrap").classList.add("show");
+  $("result").classList.remove("show");
+  $("scan").classList.add("on");
+  $("analysing").classList.add("on");
+  window.scrollTo({top:$("previewWrap").offsetTop-80,behavior:"smooth"});
+  const base64 = dataUrl.split(",")[1];
+  const mime = file.type || "image/jpeg";
+  try{ mostrarResultado(await identificar(base64,mime), dataUrl); }
+  catch(err){ console.error(err); mostrarErro(err.message); }
+  finally{ $("scan").classList.remove("on"); $("analysing").classList.remove("on"); }
+}
+function readAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(new Error("Não consegui ler a imagem.")); r.readAsDataURL(file); }); }
+
+async function identificar(base64, mime){
+  let prompt =
+`Você é ${TEMA.especialista}. Analise a imagem e identifique a ${TEMA.alvo} presente nela.
+
+Regras:
+- Se não conseguir identificar com confiança de pelo menos ${LIMIAR_CONFIANCA}%, defina "identificado" como false e explique de forma gentil no campo "mensagem".
+- Se a imagem claramente não contém uma ${TEMA.alvo}, defina "identificado" como false.
+- Responda sempre em português do Brasil.
+- O nome científico deve ser preciso.
+- As curiosidades devem ser verdadeiras, específicas e interessantes — nada genérico.
+- Em "status_conservacao", use a categoria da IUCN em português (ex.: Pouco preocupante, Vulnerável, Em perigo).
+- Em "biomas", liste APENAS os biomas brasileiros onde a espécie ocorre, escolhendo de: "Amazônia", "Cerrado", "Mata Atlântica", "Caatinga", "Pampa", "Pantanal". O primeiro item da lista deve ser o bioma PRINCIPAL (mais associado à espécie).
+- Em "regioes", liste estados ou regiões brasileiras de ocorrência (ex.: "Norte do Pará", "Mata Atlântica do Sul da Bahia").
+- Em "habitat_descricao", descreva em 2-3 frases ricas o ambiente onde a espécie vive (estratos da floresta, tipo de vegetação, hidrografia, comportamento espacial).
+- Em "cenario_tipo", escolha UM de: "floresta_amazonica","mata_atlantica","cerrado","caatinga","pampa","pantanal","rio","manguezal","urbano","plantacao".
+- Em "cenario_periodo", escolha UM de: "dia","amanhecer","crepusculo","noite".
+- Em "elementos_cenario", liste 4-7 elementos visuais característicos do ambiente (ex.: "árvores emergentes", "epífitas", "rio escuro", "cipós", "pedras", "neblina matinal").
+- Em "companheiros_habitat", liste 3-5 espécies (animais ou plantas) que dividem o habitat com a identificada.
+- Em "curiosidade_habitat", traga UMA curiosidade marcante sobre como ela usa/depende do habitat.`;
+  if(TEMA.aviso) prompt += `\n- Inclua naturalmente este aviso de segurança em uma das curiosidades: "${TEMA.aviso}"`;
+
+  const body = {
+    contents:[{ parts:[ {text:prompt}, {inline_data:{mime_type:mime, data:base64}} ] }],
+    generationConfig:{
+      temperature:0.2, responseMimeType:"application/json",
+      responseSchema:{ type:"object", properties:{
+        identificado:{type:"boolean"}, confianca:{type:"integer"},
+        nome_popular:{type:"string"}, nome_cientifico:{type:"string"},
+        status_conservacao:{type:"string"}, curiosidades:{type:"array",items:{type:"string"}},
+        especies_parecidas:{type:"array",items:{type:"string"}}, mensagem:{type:"string"},
+        biomas:{type:"array",items:{type:"string"}},
+        regioes:{type:"array",items:{type:"string"}},
+        habitat_descricao:{type:"string"},
+        cenario_tipo:{type:"string"},
+        cenario_periodo:{type:"string"},
+        elementos_cenario:{type:"array",items:{type:"string"}},
+        companheiros_habitat:{type:"array",items:{type:"string"}},
+        curiosidade_habitat:{type:"string"}
+      }, required:["identificado","confianca","nome_popular","nome_cientifico","status_conservacao","curiosidades","especies_parecidas","mensagem","biomas","regioes","habitat_descricao","cenario_tipo","cenario_periodo","elementos_cenario","companheiros_habitat","curiosidade_habitat"] }
+    }
+  };
+  const url=`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${API_KEY}`;
+  const res=await chamarGeminiComRetry(url, body);
+  const json=await res.json();
+  const texto=json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!texto) throw new Error("A IA não retornou resposta. Tente outra foto.");
+  return JSON.parse(texto);
+}
+
+async function chamarGeminiComRetry(url, body){
+  const opcoes={method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)};
+  const atrasos=[0, 900, 1800];
+  let ultimaResposta=null;
+  for(let tentativa=0; tentativa<atrasos.length; tentativa++){
+    if(atrasos[tentativa]) await esperar(atrasos[tentativa]);
+    const res=await fetch(url, opcoes);
+    if(res.ok) return res;
+    ultimaResposta=res;
+    if(![429,500,502,503,504].includes(res.status)) break;
+  }
+  throw new Error(await mensagemErroApi(ultimaResposta));
+}
+
+async function mensagemErroApi(res){
+  let detalhe="";
+  try{
+    const erro=await res.clone().json();
+    detalhe=erro?.error?.message ? " Detalhe: "+erro.error.message : "";
+  }catch(e){}
+  if(res.status===429) return "Limite de requisições atingido. Tente de novo em alguns instantes."+detalhe;
+  if(res.status===400||res.status===403) return "Chave inválida ou sem permissão. Verifique na engrenagem."+detalhe;
+  if([500,502,503,504].includes(res.status)) return "O serviço da IA ficou instável agora ("+res.status+"). Aguarde alguns segundos e tente novamente."+detalhe;
+  return "Erro na API ("+res.status+")."+detalhe;
+}
+
+function mostrarResultado(d, dataUrl){
+  const r=$("result"); r.classList.add("show");
+  if(!d.identificado || d.confianca<LIMIAR_CONFIANCA){
+    r.innerHTML=`<div class="uncertain"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div><h3>Não consegui ter certeza</h3><p>${escapeHtml(d.mensagem||"Tente uma foto mais nítida, com a "+TEMA.alvo+" bem enquadrada e com boa luz.")}</p><button class="again" onclick="resetar()">Tentar outra foto</button></div>`;
+    scrollToResult(); return;
+  }
+  const facts=(d.curiosidades||[]).map((c,i)=>`<li class="reveal" style="animation-delay:${.25+i*.08}s">${escapeHtml(c)}</li>`).join("");
+  const chips=(d.especies_parecidas||[]).map(c=>`<span class="chip">${escapeHtml(c)}</span>`).join("");
+  r.innerHTML=`<div class="card">
+    <div class="r-head reveal"><div><div class="r-name">${escapeHtml(d.nome_popular)}</div><div class="r-sci">${escapeHtml(d.nome_cientifico)}</div></div><div class="badge">${d.confianca}% certeza</div></div>
+    <div class="tabs reveal" style="animation-delay:.05s" role="tablist">
+      <button class="tab active" data-tab="sobre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Sobre</button>
+      <button class="tab" data-tab="local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Localização</button>
+      <button class="tab" data-tab="habitat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21l3-9 6 4 6-7 3 12"/><path d="M3 21h18"/></svg>Habitat</button>
+    </div>
+
+    <div class="tab-panel on" data-panel="sobre">
+      <div class="r-section reveal" style="animation-delay:.1s"><div class="r-label">Conservação</div><div class="conservation"><span class="dot"></span>${escapeHtml(d.status_conservacao)}</div></div>
+      ${facts?`<div class="r-section reveal" style="animation-delay:.18s"><div class="r-label">Você sabia?</div><ul class="facts">${facts}</ul></div>`:""}
+      ${chips?`<div class="r-section reveal" style="animation-delay:.3s"><div class="r-label">Parecidas</div><div class="chips">${chips}</div></div>`:""}
+    </div>
+
+    <div class="tab-panel" data-panel="local">${renderLocalizacao(d)}</div>
+    <div class="tab-panel" data-panel="habitat">${renderHabitat(d)}</div>
+
+    <button class="again" onclick="resetar()">Identificar outra</button></div>`;
+
+  bindTabs(r,d);
+  adicionarAoAlbum(d, dataUrl); scrollToResult();
+}
+
+function bindTabs(r,d){
+  const tabs=r.querySelectorAll(".tab"), panels=r.querySelectorAll(".tab-panel");
+  tabs.forEach(t=>t.onclick=()=>{
+    tabs.forEach(x=>x.classList.remove("active"));
+    panels.forEach(x=>x.classList.remove("on"));
+    t.classList.add("active");
+    const id=t.dataset.tab;
+    r.querySelector(`.tab-panel[data-panel="${id}"]`).classList.add("on");
+    if(id==="local") setTimeout(()=>initMapa(d),50);
+    if(id==="habitat") setTimeout(()=>initCena(d),50);
+  });
+}
+function mostrarErro(msg){ const r=$("result"); r.classList.add("show"); r.innerHTML=`<div class="uncertain"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div><h3>Algo deu errado</h3><p>${escapeHtml(msg)}</p><button class="again" onclick="resetar()">Tentar de novo</button></div>`; scrollToResult(); }
+function adicionarAoAlbum(d,dataUrl){ if(album.some(a=>a.sci===d.nome_cientifico))return; album.unshift({nome:d.nome_popular,sci:d.nome_cientifico,img:dataUrl}); renderAlbum(); }
+function renderAlbum(){ $("albumCount").textContent=album.length+(album.length===1?" espécie":" espécies"); if(!album.length){ $("albumBody").innerHTML='<div class="album-empty">Suas identificações aparecem aqui.</div>'; return; } $("albumBody").innerHTML=`<div class="album-grid">`+album.map(a=>`<div class="album-item"><img src="${a.img}" alt=""><span>${escapeHtml(a.nome)}</span></div>`).join("")+`</div>`; }
+function resetar(){ $("result").classList.remove("show"); $("previewWrap").classList.remove("show"); window.scrollTo({top:0,behavior:"smooth"}); }
+function scrollToResult(){ setTimeout(()=>$("result").scrollIntoView({behavior:"smooth",block:"start"}),120); }
+function escapeHtml(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ============================================================
+   LOCALIZAÇÃO — mapa interativo real (Leaflet + tiles CARTO)
+   ============================================================ */
+const BIOMAS = {
+  "Amazônia":      { cor:"#3ef0a0", coord:[-3.4,-62.2], raio:820000 },
+  "Cerrado":       { cor:"#d6c75a", coord:[-15.6,-49.0], raio:640000 },
+  "Mata Atlântica":{ cor:"#5fcf6e", coord:[-22.8,-44.6], raio:520000 },
+  "Caatinga":      { cor:"#e09a4a", coord:[-9.2,-40.3], raio:540000 },
+  "Pantanal":      { cor:"#4cc4d6", coord:[-17.7,-57.3], raio:300000 },
+  "Pampa":         { cor:"#9ad65a", coord:[-30.6,-54.2], raio:300000 }
+};
+let mapaLeaflet=null;
+
+function renderLocalizacao(d){
+  const biomas=(d.biomas||[]).filter(b=>BIOMAS[b]);
+  const regioes=d.regioes||[];
+  const legenda=Object.entries(BIOMAS).map(([nome,b])=>{
+    const live=biomas.includes(nome);
+    return `<div class="legend-item ${live?'on':''}" style="--lc:${b.cor}"><span class="legend-swatch" style="background:${b.cor}"></span>${escapeHtml(nome)}</div>`;
+  }).join("");
+  const pills=regioes.length
+    ? `<div class="regions-row"><div class="r-label">Onde costuma ocorrer</div><div class="regions-list">${regioes.map(rg=>`<span class="region-pill">${escapeHtml(rg)}</span>`).join("")}</div></div>`
+    : "";
+  const resumo=biomas.length
+    ? `<p class="map-note">Os focos acesos mostram onde <strong>${escapeHtml(d.nome_popular)}</strong> ocorre no Brasil — o ponto pulsante é o bioma principal. Arraste e dê zoom no mapa.</p>`
+    : "";
+  return `
+    <div class="map-box" id="mapBox"></div>
+    ${resumo}
+    <div class="map-legend2">
+      <div class="legend-title">Biomas onde ocorre</div>
+      <div class="legend-grid">${legenda}</div>
+    </div>
+    ${pills}`;
+}
+
+function initMapa(d){
+  const el=document.getElementById("mapBox");
+  if(!el) return;
+  if(typeof L==="undefined"){ el.innerHTML='<div class="map-fallback">Não consegui carregar o mapa (verifique a conexão).</div>'; return; }
+  if(mapaLeaflet){ try{mapaLeaflet.remove();}catch(e){} mapaLeaflet=null; }
+  const map=L.map(el,{attributionControl:false,scrollWheelZoom:true,zoomControl:true});
+  mapaLeaflet=map;
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{subdomains:"abcd",maxZoom:11}).addTo(map);
+  const biomas=(d.biomas||[]).filter(b=>BIOMAS[b]);
+  const pts=[];
+  biomas.forEach((nome,i)=>{
+    const b=BIOMAS[nome], prim=i===0;
+    L.circle(b.coord,{radius:b.raio,color:b.cor,weight:1,opacity:.55,fillColor:b.cor,fillOpacity:.16}).addTo(map);
+    const icon=L.divIcon({className:"",iconSize:[24,24],iconAnchor:[12,12],
+      html:`<span class="biome-marker ${prim?'primary':''}" style="--mc:${b.cor}"></span>`});
+    L.marker(b.coord,{icon}).addTo(map)
+      .bindTooltip(`<b>${escapeHtml(nome)}</b>${prim?" · principal":""}`,{direction:"top",offset:[0,-10]});
+    pts.push(b.coord);
+  });
+  if(pts.length){ map.fitBounds(L.latLngBounds(pts).pad(.55)); if(pts.length===1) map.setZoom(5); }
+  else map.setView([-14.5,-52],3.6);
+  setTimeout(()=>map.invalidateSize(),80);
+}
+
+/* ============================================================
+   HABITAT — cena fotográfica real + variação de luz (período)
+   ============================================================ */
+const CENARIOS = {
+  floresta_amazonica:{ nome:"Floresta Amazônica",   foto:"photo-1591081658714-f576fb7ea3ed" },
+  mata_atlantica:    { nome:"Mata Atlântica",       foto:"photo-1448375240586-882707db888b" },
+  cerrado:           { nome:"Cerrado",              foto:"photo-1535940360221-641a69c43bac" },
+  caatinga:          { nome:"Caatinga",             foto:"photo-1592521899562-172a1fda8059" },
+  pampa:             { nome:"Pampa",                foto:"photo-1758614685215-b1d7dbaca5c6" },
+  pantanal:          { nome:"Pantanal",             foto:"photo-1566818421132-700d4b3ceeb7" },
+  rio:               { nome:"Rios e igarapés",      foto:"photo-1591081658714-f576fb7ea3ed" },
+  manguezal:         { nome:"Manguezal",            foto:"photo-1717292741426-d050f4f25503" },
+  urbano:            { nome:"Áreas urbanas",        foto:"photo-1620337634371-2a57564f24b5" },
+  plantacao:         { nome:"Plantações e pomares", foto:"photo-1591389703635-e15a07b842d7" }
+};
+const PERIODOS = {
+  dia:        { nome:"Dia",        filtro:"saturate(1.08) brightness(1.02) contrast(1.02)",                            tint:"transparent" },
+  amanhecer:  { nome:"Amanhecer",  filtro:"saturate(1.1) brightness(.96) contrast(1.02) sepia(.22) hue-rotate(-12deg)", tint:"rgba(255,168,86,.20)" },
+  crepusculo: { nome:"Crepúsculo", filtro:"saturate(1.18) brightness(.74) contrast(1.06) hue-rotate(-6deg)",           tint:"rgba(150,66,120,.32)" },
+  noite:      { nome:"Noite",      filtro:"saturate(.65) brightness(.42) contrast(1.08) hue-rotate(6deg)",             tint:"rgba(18,38,108,.46)" }
+};
+function fotoCenario(id){ const c=CENARIOS[id]||CENARIOS.floresta_amazonica; return `https://images.unsplash.com/${c.foto}?auto=format&fit=crop&w=900&q=72`; }
+
+function renderHabitat(d){
+  const tipo = CENARIOS[d.cenario_tipo] ? d.cenario_tipo : "floresta_amazonica";
+  const periodo = PERIODOS[d.cenario_periodo] ? d.cenario_periodo : "dia";
+  const C=CENARIOS[tipo], P=PERIODOS[periodo];
+  const elementos = d.elementos_cenario||[];
+  const companheiros = (d.companheiros_habitat||[]).slice(0,5);
+  const desc = d.habitat_descricao||"";
+  const cur = d.curiosidade_habitat||"";
+
+  const tags = companheiros.map((c,i,arr)=>{
+    const n=arr.length;
+    const x = n===1 ? 50 : 13+i*(74/(n-1));
+    const y = i%2 ? 64 : 47;
+    return `<button class="fauna-tag" style="left:${x}%;top:${y}%" onclick="this.classList.toggle('show')">
+      <span class="fauna-dot"></span><span class="fauna-label">${escapeHtml(c)}</span></button>`;
+  }).join("");
+
+  const botoes = Object.entries(PERIODOS).map(([k,p])=>`<button data-per="${k}" class="${k===periodo?'on':''}">${p.nome}</button>`).join("");
+
+  const compHtml = companheiros.length
+    ? `<div class="companions"><div class="r-label">Convivem por aqui · toque nos pontos</div><div class="comp-list">${companheiros.map(c=>`<span class="comp">${escapeHtml(c)}</span>`).join("")}</div></div>`:"";
+
+  return `
+    <div class="scene ${periodo==='noite'?'night':''}" id="scene">
+      <div class="scene-photo" id="scenePhoto" style="background-image:url('${fotoCenario(tipo)}');filter:${P.filtro}"></div>
+      <div class="scene-tint" id="sceneTint" style="background:${P.tint}"></div>
+      <div class="scene-vignette"></div>
+      <div class="scene-stars"></div>
+      ${tags}
+      <div class="scene-controls">${botoes}</div>
+      <div class="scene-overlay">
+        <div class="scene-bioma" id="sceneBioma">${escapeHtml(C.nome)} · ${P.nome}</div>
+        <div class="scene-titulo">${escapeHtml(d.nome_popular)} no seu habitat</div>
+      </div>
+    </div>
+
+    <div class="habitat-info">
+      <div class="hinfo"><div class="lbl">Bioma principal</div><div class="val">${escapeHtml((d.biomas||["—"])[0])}</div></div>
+      <div class="hinfo"><div class="lbl">Cenário</div><div class="val">${escapeHtml(C.nome)}</div></div>
+    </div>
+
+    ${desc?`<div class="habitat-desc">${escapeHtml(desc)}</div>`:""}
+    ${cur?`<div class="r-section" style="margin-top:14px"><div class="r-label">Vida no habitat</div><ul class="facts"><li>${escapeHtml(cur)}</li></ul></div>`:""}
+    ${compHtml}
+    ${elementos.length?`<div class="r-section" style="margin-top:14px"><div class="r-label">No cenário você encontra</div><div class="chips">${elementos.map(e=>`<span class="chip">${escapeHtml(e)}</span>`).join("")}</div></div>`:""}
+  `;
+}
+
+function initCena(d){
+  const scene=document.getElementById("scene");
+  if(!scene) return;
+  const photo=scene.querySelector("#scenePhoto"),
+        tint=scene.querySelector("#sceneTint"),
+        bioma=scene.querySelector("#sceneBioma");
+  const tipo = CENARIOS[d.cenario_tipo] ? d.cenario_tipo : "floresta_amazonica";
+  const nomeCenario = CENARIOS[tipo].nome;
+  scene.querySelectorAll(".scene-controls button").forEach(b=>{
+    b.onclick=()=>{
+      const p=PERIODOS[b.dataset.per]; if(!p) return;
+      scene.querySelectorAll(".scene-controls button").forEach(x=>x.classList.toggle("on",x===b));
+      photo.style.filter=p.filtro;
+      tint.style.background=p.tint;
+      bioma.textContent=`${nomeCenario} · ${p.nome}`;
+      scene.classList.toggle("night", b.dataset.per==="noite");
+    };
+  });
+}
+
+renderCatalog();
+</script>
+</body>
+</html>
