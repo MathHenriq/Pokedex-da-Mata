@@ -205,65 +205,51 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 .region-pill{font-size:12.5px;padding:6px 11px;border-radius:999px;background:color-mix(in srgb,var(--glow-primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--glow-primary) 24%,transparent);color:var(--text);display:inline-flex;align-items:center;gap:6px}
 .region-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--glow-primary);box-shadow:0 0 8px var(--glow-primary)}
 
-/* ============ HABITAT — diorama vivo gerado (CSS/SVG, sem foto) ============ */
-.scene{position:relative;margin-top:16px;border-radius:22px;overflow:hidden;border:1px solid var(--surface-line);aspect-ratio:3/2;background:#04100a;box-shadow:0 30px 72px -42px #000;--accent:#3ef0a0;--m1:#1f6d4a;--m2:#0e4d34;--chao1:#12492f;--chao2:#0a3120;--veg:#072417}
+/* ============ HABITAT — cena fotográfica viva ============ */
+.scene{position:relative;margin-top:16px;border-radius:22px;overflow:hidden;border:1px solid var(--surface-line);aspect-ratio:3/2;background:#04100a;box-shadow:0 30px 72px -42px #000;--accent:#3ef0a0}
 
-/* céu por período */
-.scene-sky{position:absolute;inset:0;z-index:0;transition:background 1.1s ease}
-.scene.per-dia .scene-sky{background:linear-gradient(180deg,#6fb9e0 0%,#a7dbe6 52%,#dff2e6 100%)}
-.scene.per-amanhecer .scene-sky{background:linear-gradient(180deg,#3b4f93 0%,#d77a52 58%,#f6c184 100%)}
-.scene.per-crepusculo .scene-sky{background:linear-gradient(180deg,#241d4d 0%,#793a76 52%,#df7a55 100%)}
-.scene.per-noite .scene-sky{background:linear-gradient(180deg,#050f2c 0%,#0c2247 58%,#15304f 100%)}
+/* foto real do bioma com Ken Burns (zoom/pan lento) */
+.scene-photo{position:absolute;inset:-5%;z-index:0;background-size:cover;background-position:center;transition:filter 1.2s ease;animation:kenburns 28s ease-in-out infinite alternate}
+@keyframes kenburns{from{transform:scale(1.05) translate(0,0)}to{transform:scale(1.15) translate(-2.5%,-1.8%)}}
+.scene.per-dia .scene-photo{filter:saturate(1.08) brightness(1.03) contrast(1.02)}
+.scene.per-amanhecer .scene-photo{filter:saturate(1.12) brightness(.95) contrast(1.03) sepia(.2) hue-rotate(-12deg)}
+.scene.per-crepusculo .scene-photo{filter:saturate(1.2) brightness(.7) contrast(1.07) hue-rotate(-6deg)}
+.scene.per-noite .scene-photo{filter:saturate(.58) brightness(.4) contrast(1.1) hue-rotate(8deg)}
 
-/* sol / lua */
-.scene-astro{position:absolute;z-index:1;left:72%;top:16%;width:46px;height:46px;border-radius:50%;pointer-events:none;transition:.9s ease;background:radial-gradient(circle at 50% 50%,#fff6cf,#ffe27a 58%,transparent 72%);box-shadow:0 0 38px 10px rgba(255,224,120,.5)}
-.scene.per-amanhecer .scene-astro{left:18%;top:52%;background:radial-gradient(circle,#ffd9a6,#ff9d5c 58%,transparent 72%);box-shadow:0 0 48px 12px rgba(255,140,80,.5)}
-.scene.per-crepusculo .scene-astro{left:15%;top:58%;background:radial-gradient(circle,#ffbd8c,#ff7a52 58%,transparent 72%);box-shadow:0 0 48px 12px rgba(255,100,70,.45)}
-.scene.per-noite .scene-astro{left:74%;top:15%;width:38px;height:38px;background:radial-gradient(circle at 38% 38%,#f2f6ff,#c3d0ff 56%,transparent 70%);box-shadow:0 0 30px 6px rgba(150,170,255,.5)}
+/* reluz de cor por período (color grade) */
+.scene-grade{position:absolute;inset:0;z-index:1;pointer-events:none;transition:background .9s ease;background:transparent}
+.scene.per-amanhecer .scene-grade{background:linear-gradient(180deg,rgba(255,168,86,.32),transparent 55%,rgba(120,60,40,.18))}
+.scene.per-crepusculo .scene-grade{background:linear-gradient(180deg,rgba(150,66,120,.38),rgba(255,110,70,.22) 70%)}
+.scene.per-noite .scene-grade{background:linear-gradient(180deg,rgba(18,38,108,.5),rgba(6,14,40,.5))}
 
-/* estrelas */
-.scene-stars{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity 1.2s ease;background-repeat:no-repeat;background-image:
-  radial-gradient(1.4px 1.4px at 18% 22%,#fff,transparent),radial-gradient(1px 1px at 67% 14%,#dfeaff,transparent),
-  radial-gradient(1.6px 1.6px at 41% 12%,#fff,transparent),radial-gradient(1px 1px at 84% 26%,#fff,transparent),
-  radial-gradient(1.2px 1.2px at 55% 20%,#eef4ff,transparent),radial-gradient(1px 1px at 30% 8%,#fff,transparent),
-  radial-gradient(1.5px 1.5px at 92% 9%,#fff,transparent),radial-gradient(1px 1px at 9% 30%,#fff,transparent),
-  radial-gradient(1.1px 1.1px at 74% 36%,#fff,transparent)}
-.scene.per-crepusculo .scene-stars{opacity:.4}
-.scene.per-noite .scene-stars{opacity:.9}
+/* raios de luz volumétricos */
+.scene-rays{position:absolute;inset:-20% -10%;z-index:2;pointer-events:none;opacity:0;transition:opacity .9s;mix-blend-mode:screen;background:linear-gradient(108deg,transparent 28%,rgba(255,244,200,.16) 40%,transparent 49%,transparent 62%,rgba(255,244,200,.1) 71%,transparent 80%);animation:rayShift 15s ease-in-out infinite}
+@keyframes rayShift{50%{transform:translateX(14px)}}
+.scene.per-dia .scene-rays{opacity:.85}
+.scene.per-amanhecer .scene-rays{opacity:1}
+.scene.per-crepusculo .scene-rays{opacity:.45}
 
-/* nuvens */
-.scene-clouds{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.9;transition:opacity .9s}
-.scene.per-noite .scene-clouds{opacity:.22}
-.cloud{position:absolute;height:13px;border-radius:999px;background:rgba(255,255,255,.82);filter:blur(2px);box-shadow:18px 4px 0 -2px rgba(255,255,255,.65),-15px 5px 0 -3px rgba(255,255,255,.55);animation:drift linear infinite}
-@keyframes drift{from{transform:translateX(-70px)}to{transform:translateX(440px)}}
+/* estrelas (noite) */
+.scene-stars{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity 1.2s ease;background-repeat:no-repeat;background-image:
+  radial-gradient(1.4px 1.4px at 18% 18%,#fff,transparent),radial-gradient(1px 1px at 67% 12%,#dfeaff,transparent),
+  radial-gradient(1.6px 1.6px at 41% 10%,#fff,transparent),radial-gradient(1px 1px at 84% 22%,#fff,transparent),
+  radial-gradient(1.2px 1.2px at 55% 16%,#eef4ff,transparent),radial-gradient(1px 1px at 30% 7%,#fff,transparent),
+  radial-gradient(1.5px 1.5px at 92% 8%,#fff,transparent),radial-gradient(1px 1px at 9% 26%,#fff,transparent),
+  radial-gradient(1.1px 1.1px at 74% 30%,#fff,transparent)}
+.scene.per-crepusculo .scene-stars{opacity:.45}
+.scene.per-noite .scene-stars{opacity:.95}
 
-/* morros em parallax */
-.scene-hills{position:absolute;left:-6%;right:-6%;bottom:28%;height:48%;z-index:2;pointer-events:none}
-.hill{position:absolute;left:0;right:0;bottom:0;border-radius:50% 50% 0 0/100% 100% 0 0}
-.hill.far{height:82%;background:var(--m1);filter:brightness(.9);animation:sway1 17s ease-in-out infinite}
-.hill.near{height:56%;background:var(--m2);animation:sway2 13s ease-in-out infinite}
-@keyframes sway1{50%{transform:translateX(9px)}}
-@keyframes sway2{50%{transform:translateX(-8px)}}
-
-/* vegetação silhueta no horizonte */
-.scene-veg{position:absolute;left:0;right:0;bottom:25%;height:36%;z-index:3;pointer-events:none}
-.scene-veg svg,.scene-grass svg{width:100%;height:100%;display:block}
-
-/* chão */
-.scene-floor{position:absolute;left:0;right:0;bottom:0;height:30%;z-index:3;background:linear-gradient(180deg,var(--chao1),var(--chao2));box-shadow:inset 0 16px 24px -14px rgba(0,0,0,.5)}
-
-/* véu de período sobre o cenário */
-.scene-veil{position:absolute;inset:0;z-index:4;pointer-events:none;transition:.9s;background:transparent}
-.scene.per-amanhecer .scene-veil{background:linear-gradient(180deg,rgba(255,150,80,.10),rgba(120,60,40,.18))}
-.scene.per-crepusculo .scene-veil{background:linear-gradient(180deg,rgba(120,50,110,.16),rgba(40,20,60,.34))}
-.scene.per-noite .scene-veil{background:linear-gradient(180deg,rgba(10,20,60,.30),rgba(4,10,30,.52))}
+/* partículas: pólen/poeira (dia) e vaga-lumes (noite) */
+.scene-particles{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.mote{position:absolute;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 0 4px rgba(255,255,255,.5);animation:floatMote linear infinite}
+@keyframes floatMote{0%{transform:translate(0,0);opacity:0}12%{opacity:.7}88%{opacity:.7}100%{transform:translate(16px,-44px);opacity:0}}
+.scene.per-amanhecer .mote{background:rgba(255,221,170,.7);box-shadow:0 0 5px rgba(255,190,120,.6)}
+.scene.per-crepusculo .mote{background:rgba(255,180,200,.6);box-shadow:0 0 5px rgba(255,140,170,.5)}
+.scene.per-noite .mote{background:#d6ff86;box-shadow:0 0 9px 2px rgba(190,255,120,.85);animation-name:firefly;animation-timing-function:ease-in-out}
+@keyframes firefly{0%,100%{opacity:0;transform:translate(0,0)}25%{opacity:1}50%{opacity:.35;transform:translate(var(--fx,12px),var(--fy,-16px))}75%{opacity:1}}
 
 /* vinheta sutil */
-.scene-vignette{position:absolute;inset:0;z-index:4;pointer-events:none;background:radial-gradient(130% 100% at 50% 26%,transparent 46%,rgba(0,0,0,.4));box-shadow:inset 0 0 120px rgba(0,0,0,.4)}
-
-/* grama em primeiro plano */
-.scene-grass{position:absolute;left:0;right:0;bottom:0;height:17%;z-index:5;pointer-events:none;transform-origin:bottom center;animation:grassSway 6s ease-in-out infinite}
-@keyframes grassSway{50%{transform:skewX(-3deg)}}
+.scene-vignette{position:absolute;inset:0;z-index:4;pointer-events:none;background:radial-gradient(135% 105% at 50% 24%,transparent 44%,rgba(0,0,0,.46));box-shadow:inset 0 0 120px rgba(0,0,0,.42)}
 .scene-overlay{position:absolute;left:0;right:0;bottom:0;z-index:6;padding:20px 16px 15px;background:linear-gradient(180deg,transparent,rgba(4,10,7,.94) 78%);color:var(--text)}
 .scene-bioma{font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow-primary);margin-bottom:5px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
 .scene-titulo{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.15;text-shadow:0 2px 14px rgba(0,0,0,.7)}
@@ -814,46 +800,20 @@ const PERIODOS = {
   crepusculo: { nome:"Crepúsculo", filtro:"saturate(1.18) brightness(.74) contrast(1.06) hue-rotate(-6deg)",           tint:"rgba(150,66,120,.32)" },
   noite:      { nome:"Noite",      filtro:"saturate(.65) brightness(.42) contrast(1.08) hue-rotate(6deg)",             tint:"rgba(18,38,108,.46)" }
 };
-/* ===== Diorama gerado: paleta + silhuetas SVG por bioma ===== */
-function tufosSVG(passo){ let d=""; for(let x=6;x<=314;x+=passo){ const h=8+((x*7)%12); d+=`M${x},120 v-${h} `; } return `<path d="${d}" stroke="var(--veg)" stroke-width="3" fill="none" stroke-linecap="round"/>`; }
+function fotoCenario(id){ const c=CENARIOS[id]||CENARIOS.floresta_amazonica; return `https://images.unsplash.com/${c.foto}?auto=format&fit=crop&w=1100&q=78`; }
 
-const BIOMA_CENA = {
-  "Amazônia":{ m1:"#1f7d52", m2:"#0e5638", chao1:"#13502f", chao2:"#0a3320", veg:"#06281a",
-    silhueta:`<rect x="0" y="100" width="320" height="20"/>
-<g><rect x="22" y="44" width="6" height="58"/><ellipse cx="25" cy="46" rx="22" ry="21"/></g>
-<g><rect x="74" y="32" width="7" height="72"/><ellipse cx="77" cy="34" rx="27" ry="25"/></g>
-<g><rect x="128" y="54" width="5" height="50"/><ellipse cx="130" cy="56" rx="18" ry="17"/></g>
-<g><rect x="178" y="38" width="7" height="66"/><ellipse cx="181" cy="40" rx="25" ry="23"/></g>
-<g><rect x="232" y="50" width="6" height="56"/><ellipse cx="235" cy="52" rx="20" ry="19"/></g>
-<g><rect x="284" y="34" width="7" height="70"/><ellipse cx="287" cy="36" rx="26" ry="24"/></g>` },
-  "Mata Atlântica":{ m1:"#2a9159", m2:"#15663d", chao1:"#176a3f", chao2:"#0c3f26", veg:"#072b1a",
-    silhueta:`<path d="M0,120 V72 Q22,50 46,66 Q66,46 92,64 Q114,48 140,66 Q162,46 190,64 Q212,50 238,66 Q262,48 290,64 Q308,52 320,68 V120 Z"/>
-<g><rect x="118" y="60" width="6" height="46"/><ellipse cx="121" cy="58" rx="22" ry="18"/></g>
-<g><rect x="232" y="58" width="6" height="48"/><ellipse cx="235" cy="56" rx="24" ry="19"/></g>` },
-  "Cerrado":{ m1:"#b39245", m2:"#856a2c", chao1:"#8a6a2c", chao2:"#5e4519", veg:"#3a2a10",
-    silhueta:`<path d="M0,120 V106 Q60,98 120,105 Q190,99 250,105 Q288,101 320,105 V120 Z"/>
-<g><rect x="56" y="80" width="5" height="28"/><ellipse cx="58" cy="80" rx="17" ry="9"/></g>
-<g><rect x="158" y="74" width="6" height="34"/><ellipse cx="161" cy="74" rx="21" ry="11"/></g>
-<g><rect x="250" y="82" width="5" height="26"/><ellipse cx="252" cy="82" rx="15" ry="8"/></g>` },
-  "Caatinga":{ m1:"#c8a05f", m2:"#9c763a", chao1:"#a87f3e", chao2:"#765325", veg:"#3f2c12",
-    silhueta:`<rect x="0" y="106" width="320" height="14"/>
-<g><rect x="48" y="62" width="12" height="46" rx="6"/><rect x="34" y="74" width="15" height="9" rx="4"/><rect x="34" y="74" width="9" height="22" rx="4"/><rect x="59" y="80" width="15" height="9" rx="4"/><rect x="65" y="80" width="9" height="18" rx="4"/></g>
-<g><rect x="176" y="70" width="11" height="38" rx="5"/><rect x="187" y="80" width="14" height="8" rx="4"/><rect x="193" y="74" width="8" height="16" rx="4"/></g>
-<g stroke="var(--veg)" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M256,108 V84 M256,94 l-11,-11 M256,90 l13,-13 M256,99 l-8,-6"/></g>` },
-  "Pampa":{ m1:"#93b85d", m2:"#5f8a3a", chao1:"#6f9a3e", chao2:"#496828", veg:"#2c3f18",
-    silhueta:`<rect x="0" y="112" width="320" height="8"/>`+tufosSVG(11) },
-  "Pantanal":{ m1:"#3aa890", m2:"#1f7466", chao1:"#236b54", chao2:"#0e4238", veg:"#072c26",
-    silhueta:`<rect x="0" y="104" width="320" height="16" opacity=".5"/><rect x="0" y="115" width="320" height="5"/>
-<g stroke="var(--veg)" stroke-width="6" fill="none" stroke-linecap="round"><path d="M66,108 q-5,-32 6,-50"/></g>
-<g stroke="var(--veg)" stroke-width="3" fill="none" stroke-linecap="round"><path d="M72,58 q-20,-10 -32,-8 M72,58 q-14,-20 -10,-34 M72,58 q6,-22 24,-26 M72,58 q20,-6 30,6 M72,58 q-6,-14 -20,-18"/></g>
-<g stroke="var(--veg)" stroke-width="5" fill="none" stroke-linecap="round"><path d="M236,108 q4,-28 -5,-44"/></g>
-<g stroke="var(--veg)" stroke-width="3" fill="none" stroke-linecap="round"><path d="M231,64 q18,-9 30,-6 M231,64 q12,-19 8,-31 M231,64 q-7,-20 -22,-22 M231,64 q-18,-5 -28,6"/></g>
-<g stroke="var(--veg)" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M150,108 v-26 M158,108 v-32 M166,108 v-22 M300,108 v-24 M308,108 v-30"/></g>` }
-};
-
-const GRAMA_SVG = (()=>{ let d=""; for(let x=0;x<=320;x+=9){ const h=14+((x*7)%13); d+=`M${x},40 q2,-${h} 4,0 `; } return `<path d="${d}" stroke="var(--veg)" stroke-width="3" fill="none" stroke-linecap="round"/>`; })();
-
-function cenaBiomaCfg(biomaNome){ return BIOMA_CENA[biomaNome] || BIOMA_CENA["Amazônia"]; }
+/* partículas (pólen de dia / vaga-lumes à noite) — geradas por cena */
+function motesHtml(seed){
+  const N=14; let out="";
+  for(let i=0;i<N;i++){
+    const x=((seed*37+i*61)%100), y=18+((seed*17+i*53)%74);
+    const sz=(1.6+((i*7)%4)*0.7).toFixed(1);
+    const dur=(7+((i*13)%9)).toFixed(0), delay=-(i*1.3).toFixed(1);
+    const fx=(8+((i*11)%18)), fy=-(10+((i*9)%20));
+    out+=`<span class="mote" style="left:${x}%;top:${y}%;width:${sz}px;height:${sz}px;animation-duration:${dur}s;animation-delay:${delay}s;--fx:${fx}px;--fy:${fy}px"></span>`;
+  }
+  return out;
+}
 
 function renderHabitat(d){
   const elementos = d.elementos_cenario||[];
@@ -911,8 +871,6 @@ function montarCenaBioma(biomaNome, itens, opts){
   const fauna = doBioma.filter(it=>ehFauna(it.tema));
   const flora = doBioma.filter(it=>!ehFauna(it.tema));
 
-  const cena = cenaBiomaCfg(biomaNome);
-
   const roam = fauna.map((it,i)=>{
     const lane = 33 + ((i*17)%16);     // 33%..48% acima do rodapé
     const spd  = 22 + (i%5)*4;          // 22..38s atravessando
@@ -931,14 +889,9 @@ function montarCenaBioma(biomaNome, itens, opts){
     const lane = 22 + ((i*9)%8);        // 22%..29% fincadas no chão da frente
     const atual = it.sci===opts.highlightSci ? " current" : "";
     const nome = escapeHtml(it.nome);
-    return `<button class="garden-plant${atual}" style="--gx:${gx}%;--lane:${lane}%;--veg:${cena.veg};--c:${it.cor||'#c8f06b'};--gdelay:${(i%5)*.3}s" onclick="this.classList.toggle('show')" title="${nome}">
+    return `<button class="garden-plant${atual}" style="--gx:${gx}%;--lane:${lane}%;--c:${it.cor||'#c8f06b'};--gdelay:${(i%5)*.3}s" onclick="this.classList.toggle('show')" title="${nome}">
       <span class="garden-thumb"><img src="${it.img}" alt="" loading="lazy"><span class="safari-emoji">${it.icone||"🌿"}</span></span>
       <span class="safari-label">${nome}</span></button>`;
-  }).join("");
-
-  const nuvens = [0,1,2].map(i=>{
-    const top=7+i*9, w=42+i*16, dur=40-i*8, delay=-i*13;
-    return `<span class="cloud" style="top:${top}%;width:${w}px;animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
   }).join("");
 
   const vazio = doBioma.length===0
@@ -946,17 +899,15 @@ function montarCenaBioma(biomaNome, itens, opts){
 
   const botoes = Object.entries(PERIODOS).map(([k,p])=>`<button data-per="${k}" class="${k===periodoKey?'on':''}">${p.nome}</button>`).join("");
 
-  return `<div class="scene per-${periodoKey}" style="--accent:${(BIOMAS[biomaNome]||{}).cor||'#3ef0a0'};--m1:${cena.m1};--m2:${cena.m2};--chao1:${cena.chao1};--chao2:${cena.chao2};--veg:${cena.veg}">
-    <div class="scene-sky"></div>
-    <div class="scene-astro"></div>
+  const seed = (biomaNome.charCodeAt(0)||65) + biomaNome.length;
+
+  return `<div class="scene per-${periodoKey}" style="--accent:${(BIOMAS[biomaNome]||{}).cor||'#3ef0a0'}">
+    <div class="scene-photo" style="background-image:url('${fotoCenario(cenarioKey)}')"></div>
+    <div class="scene-grade"></div>
+    <div class="scene-rays"></div>
     <div class="scene-stars"></div>
-    <div class="scene-clouds">${nuvens}</div>
-    <div class="scene-hills"><div class="hill far"></div><div class="hill near"></div></div>
-    <div class="scene-veg"><svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMax slice" fill="var(--veg)">${cena.silhueta}</svg></div>
-    <div class="scene-floor"></div>
-    <div class="scene-veil"></div>
+    <div class="scene-particles">${motesHtml(seed)}</div>
     <div class="scene-vignette"></div>
-    <div class="scene-grass"><svg viewBox="0 0 320 40" preserveAspectRatio="xMidYMax slice">${GRAMA_SVG}</svg></div>
     ${roam}
     ${garden}
     ${vazio}
