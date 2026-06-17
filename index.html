@@ -218,25 +218,58 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
   radial-gradient(1.5px 1.5px at 92% 9%,#fff,transparent),radial-gradient(1px 1px at 9% 38%,#fff,transparent),
   radial-gradient(1.1px 1.1px at 74% 40%,#fff,transparent)}
 .scene.night .scene-stars{opacity:.85}
-.fauna-tag{position:absolute;z-index:5;transform:translate(-50%,-50%);border:none;background:none;padding:0;cursor:pointer}
-.fauna-dot{width:15px;height:15px;border-radius:50%;background:var(--glow-primary);box-shadow:0 0 0 4px color-mix(in srgb,var(--glow-primary) 30%,transparent),0 0 18px var(--glow-primary);animation:fpulse 1.7s ease-in-out infinite;margin:0 auto}
-@keyframes fpulse{50%{transform:scale(1.4)}}
-.fauna-label{position:absolute;left:50%;bottom:22px;transform:translateX(-50%) translateY(4px);background:rgba(4,10,7,.94);border:1px solid var(--surface-line);padding:7px 11px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;transition:.22s;color:var(--text);backdrop-filter:blur(6px)}
-.fauna-tag:hover .fauna-label,.fauna-tag.show .fauna-label{opacity:1;transform:translateX(-50%) translateY(0)}
 .scene-overlay{position:absolute;left:0;right:0;bottom:0;z-index:6;padding:20px 16px 15px;background:linear-gradient(180deg,transparent,rgba(4,10,7,.94) 78%);color:var(--text)}
 .scene-bioma{font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow-primary);margin-bottom:5px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
 .scene-titulo{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.15;text-shadow:0 2px 14px rgba(0,0,0,.7)}
 .scene-controls{position:absolute;top:12px;right:12px;z-index:6;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:62%}
 .scene-controls button{padding:7px 11px;border-radius:999px;border:1px solid var(--surface-line);background:rgba(4,10,7,.62);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);letter-spacing:.03em;transition:.2s}
 .scene-controls button.on{background:linear-gradient(135deg,color-mix(in srgb,var(--glow-primary) 38%,transparent),color-mix(in srgb,var(--glow-secondary) 38%,transparent));border-color:transparent}
-.habitat-info{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.hinfo{padding:13px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--surface-line)}
-.hinfo .lbl{font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
-.hinfo .val{font-size:13.5px;line-height:1.4;color:var(--text)}
 .habitat-desc{margin-top:12px;padding:14px;border-radius:14px;background:color-mix(in srgb,var(--glow-primary) 5%,transparent);border:1px solid color-mix(in srgb,var(--glow-primary) 18%,transparent);font-size:14px;line-height:1.55;color:#d4e8de}
 .companions{margin-top:12px}
 .comp-list{display:flex;flex-wrap:wrap;gap:7px}
 .comp{font-size:12.5px;padding:6px 11px;border-radius:10px;background:color-mix(in srgb,var(--glow-warm) 7%,transparent);border:1px solid color-mix(in srgb,var(--glow-warm) 22%,transparent);color:#eff0c5}
+
+/* ============ SAFARI (coleção viva por bioma) ============ */
+.safari-cta{margin:18px auto 0;display:flex;align-items:center;gap:9px;border:1px solid color-mix(in srgb,var(--glow-primary) 35%,var(--surface-line));background:color-mix(in srgb,var(--glow-primary) 10%,transparent);color:var(--text);font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:13px;padding:11px 18px;border-radius:999px;cursor:pointer;transition:transform .15s}
+.safari-cta:active{transform:translateY(2px)}
+.safari-cta-count{font-family:'Space Mono',monospace;font-size:11px;background:var(--glow-primary);color:#04140d;border-radius:999px;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+
+.biome-switcher{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 2px}
+.biome-pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:999px;border:1px solid var(--surface-line);background:var(--surface);color:var(--text-dim);cursor:pointer;transition:.2s}
+.biome-pill .swatch{width:8px;height:8px;border-radius:50%;background:var(--bc);box-shadow:0 0 8px var(--bc)}
+.biome-pill .qtd{font-family:'Space Mono',monospace;font-size:10.5px;opacity:.75}
+.biome-pill.active{color:var(--text);border-color:color-mix(in srgb,var(--bc) 55%,transparent);background:color-mix(in srgb,var(--bc) 16%,transparent)}
+
+.safari-jumpnav{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 6px}
+
+.safari-section{margin-top:26px}
+.safari-section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.safari-section-head h3{font-family:'Fraunces',serif;font-size:18px;font-weight:600}
+.safari-section-head span{font-family:'Space Mono',monospace;font-size:11px;color:var(--text-dim)}
+
+.safari-roam{position:absolute;z-index:5;border:none;background:none;padding:0;cursor:pointer;--wd:10px;--wu:5px;animation:safariWalk var(--wdur,7s) ease-in-out infinite;animation-delay:var(--wdelay,0s)}
+@keyframes safariWalk{0%,100%{transform:translate(-50%,-50%) translateX(calc(var(--wd) * -1)) translateY(0)}50%{transform:translate(-50%,-50%) translateX(var(--wd)) translateY(calc(var(--wu) * -1))}}
+.safari-thumb{position:relative;display:block;width:42px;height:42px;border-radius:50%;overflow:hidden;border:2px solid var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 22%,transparent),0 6px 16px -6px #000}
+.safari-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.safari-emoji{position:absolute;right:-3px;bottom:-3px;width:16px;height:16px;border-radius:50%;background:var(--bg-1);display:grid;place-items:center;font-size:9px;border:1px solid var(--surface-line)}
+.safari-label{position:absolute;left:50%;top:-10px;transform:translate(-50%,-100%);background:rgba(4,10,7,.94);border:1px solid var(--surface-line);padding:6px 10px;border-radius:9px;font-size:11.5px;font-weight:600;white-space:nowrap;opacity:0;pointer-events:none;transition:.2s;color:var(--text)}
+.safari-roam:hover .safari-label,.safari-roam.show .safari-label,.garden-plant:hover .safari-label,.garden-plant.show .safari-label{opacity:1}
+.safari-roam.current .safari-thumb{box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 45%,transparent),0 0 22px var(--c)}
+.safari-roam.current .safari-thumb{animation:currentPulse 1.8s ease-in-out infinite}
+@keyframes currentPulse{50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--c) 30%,transparent),0 0 26px var(--c)}}
+
+.garden-bed{position:relative;display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;margin:0 0 12px;padding:6px 34px 4px}
+.garden-plant{position:relative;flex-shrink:0;border:none;background:none;padding:0 0 8px;cursor:pointer;animation:gardenGrow 3.6s ease-in-out infinite;animation-delay:var(--gdelay,0s)}
+@keyframes gardenGrow{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.garden-plant::after{content:"";position:absolute;left:50%;bottom:0;width:2px;height:9px;background:color-mix(in srgb,var(--c) 70%,#cdeec0);transform:translateX(-50%)}
+.garden-thumb{position:relative;display:block;width:34px;height:34px;border-radius:50% 50% 50% 8px;overflow:hidden;border:2px solid var(--c);box-shadow:0 0 10px -2px var(--c)}
+.garden-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.garden-plant .safari-emoji{width:14px;height:14px;font-size:8px}
+.garden-plant .safari-label{top:-6px}
+.garden-plant.current .garden-thumb{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 45%,transparent),0 0 16px var(--c)}
+
+.safari-empty{position:absolute;inset:0;z-index:5;display:grid;place-items:center;text-align:center;padding:30px}
+.safari-empty p{max-width:260px;font-size:13.5px;line-height:1.5;color:#d4e8de;background:rgba(4,10,7,.55);padding:14px 16px;border-radius:14px;border:1px solid var(--surface-line);backdrop-filter:blur(6px)}
 </style>
 </head>
 <body>
@@ -255,9 +288,23 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
       <div class="eyebrow">Núcleo WIT · Catálogo de campo</div>
       <h1>Pokédex<br>da Mata</h1>
       <p class="subtitle">Dez lentes pra reconhecer o que vive, cresce e voa pelo Brasil.</p>
+      <button class="safari-cta" id="btnSafari">🧭 Ver meu Safari<span class="safari-cta-count" id="safariCtaCount">0</span></button>
     </header>
     <div class="cat-grid" id="catGrid"></div>
     <footer>Floresta + Tecnologia · IA de visão</footer>
+  </div>
+
+  <!-- ===================== TELA: SAFARI (coleção por bioma) ===================== -->
+  <div class="screen" id="screenSafari">
+    <div class="bar">
+      <button class="back" id="btnBackSafari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
+      <div>
+        <div class="bar-title">Seu Safari</div>
+        <div class="bar-sub">Tudo que você já descobriu, no seu bioma</div>
+      </div>
+    </div>
+    <div class="safari-jumpnav" id="safariJumpNav"></div>
+    <div id="safariFull"></div>
   </div>
 
   <!-- ===================== TELA: IDENTIFICAR ===================== -->
@@ -339,46 +386,46 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 const TEMAS = [
   { id:"aves", nome:"Aves do Brasil", desc:"Pássaros e aves nativas",
     alvo:"ave brasileira", especialista:"um ornitólogo brasileiro especialista nas aves do Brasil",
-    cor:"#3ef0a0", cor2:"#22d3ee" },
+    cor:"#3ef0a0", cor2:"#22d3ee", icone:"🐦" },
 
   { id:"frutas", nome:"Frutas Brasileiras", desc:"Frutas nativas e tropicais",
     alvo:"fruta", especialista:"um engenheiro agrônomo especialista em frutas brasileiras e tropicais",
-    cor:"#ff9f45", cor2:"#ffd24a" },
+    cor:"#ff9f45", cor2:"#ffd24a", icone:"🍈" },
 
   { id:"arvores", nome:"Árvores Nativas", desc:"Espécies da flora brasileira",
     alvo:"árvore", especialista:"um dendrólogo especialista em árvores nativas do Brasil",
-    cor:"#5fcf6e", cor2:"#c8f06b" },
+    cor:"#5fcf6e", cor2:"#c8f06b", icone:"🌳" },
 
   { id:"medicinais", nome:"Plantas Medicinais", desc:"Ervas e usos tradicionais",
     alvo:"planta medicinal", especialista:"um etnobotânico especialista em plantas medicinais brasileiras",
-    cor:"#4fe0b5", cor2:"#8ef0d0",
+    cor:"#4fe0b5", cor2:"#8ef0d0", icone:"🌿",
     aviso:"As informações são educativas. Nunca use uma planta como remédio sem orientação de um profissional de saúde." },
 
   { id:"insetos", nome:"Insetos", desc:"A fauna invisível da mata",
     alvo:"inseto", especialista:"um entomólogo especialista na fauna de insetos do Brasil",
-    cor:"#aef03e", cor2:"#e0f04a" },
+    cor:"#aef03e", cor2:"#e0f04a", icone:"🦋" },
 
   { id:"cogumelos", nome:"Cogumelos e Fungos", desc:"Espécies do reino fungi",
     alvo:"cogumelo ou fungo", especialista:"um micólogo especialista em fungos e cogumelos",
-    cor:"#f0765e", cor2:"#f0a05e",
+    cor:"#f0765e", cor2:"#f0a05e", icone:"🍄",
     aviso:"NUNCA consuma um cogumelo identificado por aplicativo. Espécies tóxicas se parecem com comestíveis." },
 
   { id:"mamiferos", nome:"Mamíferos", desc:"Bichos da fauna brasileira",
     alvo:"mamífero", especialista:"um mastozoólogo especialista nos mamíferos da fauna brasileira",
-    cor:"#f0b24a", cor2:"#f0d24a" },
+    cor:"#f0b24a", cor2:"#f0d24a", icone:"🐾" },
 
   { id:"repteis", nome:"Répteis e Anfíbios", desc:"Cobras, lagartos e sapos",
     alvo:"réptil ou anfíbio", especialista:"um herpetólogo especialista em répteis e anfíbios do Brasil. Sempre informe se a espécie é peçonhenta",
-    cor:"#7ef03e", cor2:"#3ef0a0",
+    cor:"#7ef03e", cor2:"#3ef0a0", icone:"🦎",
     aviso:"Em caso de picada, procure atendimento médico imediato. Nunca manuseie o animal." },
 
   { id:"flores", nome:"Flores", desc:"Plantas ornamentais e silvestres",
     alvo:"flor", especialista:"um botânico especialista em flores e plantas ornamentais",
-    cor:"#f06ec0", cor2:"#f0a0d8" },
+    cor:"#f06ec0", cor2:"#f0a0d8", icone:"🌸" },
 
   { id:"peixes", nome:"Peixes de Rio", desc:"Fauna de água doce",
     alvo:"peixe de água doce", especialista:"um ictiólogo especialista em peixes de água doce brasileiros",
-    cor:"#4aa8f0", cor2:"#3ed8f0" }
+    cor:"#4aa8f0", cor2:"#3ed8f0", icone:"🐟" }
 ];
 
 const MODELO = "gemini-2.5-flash";   // troque por "gemini-2.5-flash-lite" pra mais requisições/dia
@@ -464,6 +511,18 @@ function abrirTema(id){
 
 $("btnBack").onclick = ()=>{
   $("screenIdentify").classList.remove("active");
+  $("screenCatalog").classList.add("active");
+  window.scrollTo({top:0});
+};
+
+$("btnSafari").onclick = ()=>{
+  renderSafariCompleto();
+  $("screenCatalog").classList.remove("active");
+  $("screenSafari").classList.add("active");
+  window.scrollTo({top:0});
+};
+$("btnBackSafari").onclick = ()=>{
+  $("screenSafari").classList.remove("active");
   $("screenCatalog").classList.add("active");
   window.scrollTo({top:0});
 };
@@ -617,8 +676,8 @@ function bindTabs(r,d){
   });
 }
 function mostrarErro(msg){ const r=$("result"); r.classList.add("show"); r.innerHTML=`<div class="uncertain"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div><h3>Algo deu errado</h3><p>${escapeHtml(msg)}</p><button class="again" onclick="resetar()">Tentar de novo</button></div>`; scrollToResult(); }
-function adicionarAoAlbum(d,dataUrl){ if(album.some(a=>a.sci===d.nome_cientifico))return; album.unshift({nome:d.nome_popular,sci:d.nome_cientifico,img:dataUrl}); renderAlbum(); }
-function renderAlbum(){ $("albumCount").textContent=album.length+(album.length===1?" espécie":" espécies"); if(!album.length){ $("albumBody").innerHTML='<div class="album-empty">Suas identificações aparecem aqui.</div>'; return; } $("albumBody").innerHTML=`<div class="album-grid">`+album.map(a=>`<div class="album-item"><img src="${a.img}" alt=""><span>${escapeHtml(a.nome)}</span></div>`).join("")+`</div>`; }
+function adicionarAoAlbum(d,dataUrl){ if(album.some(a=>a.sci===d.nome_cientifico))return; album.unshift({nome:d.nome_popular,sci:d.nome_cientifico,img:dataUrl,tema:TEMA.id,cor:TEMA.cor,icone:TEMA.icone,biomas:d.biomas||[]}); renderAlbum(); }
+function renderAlbum(){ $("albumCount").textContent=album.length+(album.length===1?" espécie":" espécies"); const cta=$("safariCtaCount"); if(cta) cta.textContent=album.length; if(!album.length){ $("albumBody").innerHTML='<div class="album-empty">Suas identificações aparecem aqui.</div>'; return; } $("albumBody").innerHTML=`<div class="album-grid">`+album.map(a=>`<div class="album-item"><img src="${a.img}" alt=""><span>${escapeHtml(a.nome)}</span></div>`).join("")+`</div>`; }
 function resetar(){ $("result").classList.remove("show"); $("previewWrap").classList.remove("show"); window.scrollTo({top:0,behavior:"smooth"}); }
 function scrollToResult(){ setTimeout(()=>$("result").scrollIntoView({behavior:"smooth",block:"start"}),120); }
 function escapeHtml(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
@@ -707,45 +766,17 @@ const PERIODOS = {
 function fotoCenario(id){ const c=CENARIOS[id]||CENARIOS.floresta_amazonica; return `https://images.unsplash.com/${c.foto}?auto=format&fit=crop&w=900&q=72`; }
 
 function renderHabitat(d){
-  const tipo = CENARIOS[d.cenario_tipo] ? d.cenario_tipo : "floresta_amazonica";
-  const periodo = PERIODOS[d.cenario_periodo] ? d.cenario_periodo : "dia";
-  const C=CENARIOS[tipo], P=PERIODOS[periodo];
   const elementos = d.elementos_cenario||[];
   const companheiros = (d.companheiros_habitat||[]).slice(0,5);
   const desc = d.habitat_descricao||"";
   const cur = d.curiosidade_habitat||"";
 
-  const tags = companheiros.map((c,i,arr)=>{
-    const n=arr.length;
-    const x = n===1 ? 50 : 13+i*(74/(n-1));
-    const y = i%2 ? 64 : 47;
-    return `<button class="fauna-tag" style="left:${x}%;top:${y}%" onclick="this.classList.toggle('show')">
-      <span class="fauna-dot"></span><span class="fauna-label">${escapeHtml(c)}</span></button>`;
-  }).join("");
-
-  const botoes = Object.entries(PERIODOS).map(([k,p])=>`<button data-per="${k}" class="${k===periodo?'on':''}">${p.nome}</button>`).join("");
-
   const compHtml = companheiros.length
-    ? `<div class="companions"><div class="r-label">Convivem por aqui · toque nos pontos</div><div class="comp-list">${companheiros.map(c=>`<span class="comp">${escapeHtml(c)}</span>`).join("")}</div></div>`:"";
+    ? `<div class="companions"><div class="r-label">A ciência também associa a este habitat</div><div class="comp-list">${companheiros.map(c=>`<span class="comp">${escapeHtml(c)}</span>`).join("")}</div></div>`:"";
 
   return `
-    <div class="scene ${periodo==='noite'?'night':''}" id="scene">
-      <div class="scene-photo" id="scenePhoto" style="background-image:url('${fotoCenario(tipo)}');filter:${P.filtro}"></div>
-      <div class="scene-tint" id="sceneTint" style="background:${P.tint}"></div>
-      <div class="scene-vignette"></div>
-      <div class="scene-stars"></div>
-      ${tags}
-      <div class="scene-controls">${botoes}</div>
-      <div class="scene-overlay">
-        <div class="scene-bioma" id="sceneBioma">${escapeHtml(C.nome)} · ${P.nome}</div>
-        <div class="scene-titulo">${escapeHtml(d.nome_popular)} no seu habitat</div>
-      </div>
-    </div>
-
-    <div class="habitat-info">
-      <div class="hinfo"><div class="lbl">Bioma principal</div><div class="val">${escapeHtml((d.biomas||["—"])[0])}</div></div>
-      <div class="hinfo"><div class="lbl">Cenário</div><div class="val">${escapeHtml(C.nome)}</div></div>
-    </div>
+    <div class="r-label">Safári do bioma · toque nos pontos</div>
+    <div id="habitatSafariBox"></div>
 
     ${desc?`<div class="habitat-desc">${escapeHtml(desc)}</div>`:""}
     ${cur?`<div class="r-section" style="margin-top:14px"><div class="r-label">Vida no habitat</div><ul class="facts"><li>${escapeHtml(cur)}</li></ul></div>`:""}
@@ -755,23 +786,124 @@ function renderHabitat(d){
 }
 
 function initCena(d){
-  const scene=document.getElementById("scene");
-  if(!scene) return;
-  const photo=scene.querySelector("#scenePhoto"),
-        tint=scene.querySelector("#sceneTint"),
-        bioma=scene.querySelector("#sceneBioma");
-  const tipo = CENARIOS[d.cenario_tipo] ? d.cenario_tipo : "floresta_amazonica";
-  const nomeCenario = CENARIOS[tipo].nome;
-  scene.querySelectorAll(".scene-controls button").forEach(b=>{
-    b.onclick=()=>{
-      const p=PERIODOS[b.dataset.per]; if(!p) return;
-      scene.querySelectorAll(".scene-controls button").forEach(x=>x.classList.toggle("on",x===b));
-      photo.style.filter=p.filtro;
-      tint.style.background=p.tint;
-      bioma.textContent=`${nomeCenario} · ${p.nome}`;
-      scene.classList.toggle("night", b.dataset.per==="noite");
-    };
+  const biomaInicial = (d.biomas&&d.biomas[0]&&BIOMAS[d.biomas[0]]) ? d.biomas[0] : "Amazônia";
+  abrirSafariBox("habitatSafariBox", album, biomaInicial, d.nome_cientifico, d.cenario_periodo);
+}
+
+/* ============================================================
+   SAFARI — coleção viva agrupada por bioma. Fauna "navega" pela
+   cena, flora/fungos ficam "plantados" num canteiro no rodapé.
+   ============================================================ */
+const BIOMA_CENARIO = {
+  "Amazônia":"floresta_amazonica", "Cerrado":"cerrado", "Mata Atlântica":"mata_atlantica",
+  "Caatinga":"caatinga", "Pampa":"pampa", "Pantanal":"pantanal"
+};
+const safariEstados = {};
+
+function ehFauna(temaId){ return (REINO[temaId]||"").startsWith("Animalia"); }
+function itensDoBioma(itens, biomaNome){ return itens.filter(it=>(it.biomas||[]).includes(biomaNome)); }
+function slugBioma(s){ return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-"); }
+
+function montarSwitcherBiomas(itens, ativa){
+  return `<div class="biome-switcher">${Object.entries(BIOMAS).map(([nome,b])=>{
+    const n=itensDoBioma(itens,nome).length;
+    return `<button class="biome-pill ${nome===ativa?'active':''}" data-bioma="${nome}" style="--bc:${b.cor}"><span class="swatch"></span>${escapeHtml(nome)}<span class="qtd">${n}</span></button>`;
+  }).join("")}</div>`;
+}
+
+function montarCenaBioma(biomaNome, itens, opts){
+  opts = opts || {};
+  const cenarioKey = BIOMA_CENARIO[biomaNome] || "floresta_amazonica";
+  const C = CENARIOS[cenarioKey];
+  const periodoKey = PERIODOS[opts.periodo] ? opts.periodo : "dia";
+  const P = PERIODOS[periodoKey];
+  const doBioma = itensDoBioma(itens, biomaNome);
+  const fauna = doBioma.filter(it=>ehFauna(it.tema));
+  const flora = doBioma.filter(it=>!ehFauna(it.tema));
+
+  const roam = fauna.map((it,i)=>{
+    const x = 10 + ((i*137)%80), y = 26 + ((i*53)%34);
+    const wd = 8+(i%4)*3, wu = 4+(i%3)*2, wdur = 5+(i%4), wdelay = (i%5)*.4;
+    const atual = it.sci===opts.highlightSci ? " current" : "";
+    const nome = escapeHtml(it.nome);
+    return `<button class="safari-roam${atual}" style="left:${x}%;top:${y}%;--c:${it.cor||'#3ef0a0'};--wd:${wd}px;--wu:${wu}px;--wdur:${wdur}s;--wdelay:${wdelay}s" onclick="this.classList.toggle('show')" title="${nome}">
+      <span class="safari-thumb"><img src="${it.img}" alt="" loading="lazy"><span class="safari-emoji">${it.icone||"🐾"}</span></span>
+      <span class="safari-label">${nome}</span></button>`;
+  }).join("");
+
+  const garden = flora.length ? `<div class="garden-bed">${flora.map((it,i)=>{
+    const atual = it.sci===opts.highlightSci ? " current" : "";
+    const nome = escapeHtml(it.nome);
+    return `<button class="garden-plant${atual}" style="--c:${it.cor||'#c8f06b'};--gdelay:${(i%5)*.3}s" onclick="this.classList.toggle('show')" title="${nome}">
+      <span class="garden-thumb"><img src="${it.img}" alt="" loading="lazy"><span class="safari-emoji">${it.icone||"🌿"}</span></span>
+      <span class="safari-label">${nome}</span></button>`;
+  }).join("")}</div>` : "";
+
+  const vazio = doBioma.length===0
+    ? `<div class="safari-empty"><p>Ninguém por aqui ainda. Identifique algo do(a) <strong>${escapeHtml(biomaNome)}</strong> pra ver a vida chegar nesse cenário.</p></div>` : "";
+
+  const botoes = Object.entries(PERIODOS).map(([k,p])=>`<button data-per="${k}" class="${k===periodoKey?'on':''}">${p.nome}</button>`).join("");
+
+  return `<div class="scene ${periodoKey==='noite'?'night':''}">
+    <div class="scene-photo" style="background-image:url('${fotoCenario(cenarioKey)}');filter:${P.filtro}"></div>
+    <div class="scene-tint" style="background:${P.tint}"></div>
+    <div class="scene-vignette"></div>
+    <div class="scene-stars"></div>
+    ${roam}
+    ${vazio}
+    <div class="scene-controls">${botoes}</div>
+    <div class="scene-overlay">
+      ${garden}
+      <div class="scene-bioma" data-base="${escapeHtml(C.nome)}">${escapeHtml(C.nome)} · ${P.nome}</div>
+      <div class="scene-titulo">${fauna.length} espécie${fauna.length===1?"":"s"} navegando · ${flora.length} no jardim</div>
+    </div>
+  </div>`;
+}
+
+function bindControlesCena(root){
+  root.querySelectorAll(".scene").forEach(scene=>{
+    scene.querySelectorAll(".scene-controls button").forEach(b=>{
+      b.onclick=()=>{
+        const p=PERIODOS[b.dataset.per]; if(!p) return;
+        scene.querySelectorAll(".scene-controls button").forEach(x=>x.classList.toggle("on",x===b));
+        const photo=scene.querySelector(".scene-photo"), tint=scene.querySelector(".scene-tint"), lbl=scene.querySelector(".scene-bioma");
+        photo.style.filter=p.filtro; tint.style.background=p.tint;
+        if(lbl) lbl.textContent = lbl.dataset.base+" · "+p.nome;
+        scene.classList.toggle("night", b.dataset.per==="noite");
+      };
+    });
   });
+}
+
+function abrirSafariBox(containerId, itens, biomaInicial, highlightSci, periodoInicial){
+  safariEstados[containerId] = {
+    itens, ativa: BIOMAS[biomaInicial] ? biomaInicial : "Amazônia",
+    highlightSci, periodo: PERIODOS[periodoInicial] ? periodoInicial : "dia"
+  };
+  desenharSafariBox(containerId);
+}
+
+function desenharSafariBox(containerId){
+  const el=document.getElementById(containerId), st=safariEstados[containerId];
+  if(!el||!st) return;
+  el.innerHTML = montarSwitcherBiomas(st.itens, st.ativa) + montarCenaBioma(st.ativa, st.itens, {highlightSci:st.highlightSci, periodo:st.periodo});
+  el.querySelectorAll(".biome-pill").forEach(p=>p.onclick=()=>{ st.ativa=p.dataset.bioma; desenharSafariBox(containerId); });
+  bindControlesCena(el);
+}
+
+function renderSafariCompleto(){
+  const itens = album;
+  const ordem = Object.keys(BIOMAS).sort((a,b)=>itensDoBioma(itens,b).length-itensDoBioma(itens,a).length);
+  $("safariJumpNav").innerHTML = ordem.map(nome=>{
+    const n=itensDoBioma(itens,nome).length;
+    return `<button class="biome-pill" style="--bc:${BIOMAS[nome].cor}" onclick="document.getElementById('safariSec-${slugBioma(nome)}').scrollIntoView({behavior:'smooth',block:'start'})"><span class="swatch"></span>${escapeHtml(nome)}<span class="qtd">${n}</span></button>`;
+  }).join("");
+  $("safariFull").innerHTML = ordem.map(nome=>`
+    <div class="safari-section" id="safariSec-${slugBioma(nome)}">
+      <div class="safari-section-head"><h3>${escapeHtml(nome)}</h3><span>${itensDoBioma(itens,nome).length} descoberta${itensDoBioma(itens,nome).length===1?"":"s"}</span></div>
+      ${montarCenaBioma(nome, itens, {periodo:"dia"})}
+    </div>`).join("");
+  bindControlesCena($("safariFull"));
 }
 
 renderCatalog();
