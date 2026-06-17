@@ -367,7 +367,7 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 <div class="modal" id="modal">
   <div class="modal-card">
     <h3>Chave da API Gemini</h3>
-    <p>Cole aqui a chave do grupo. Pegue uma gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. A chave fica só neste dispositivo.</p>
+    <p>Opcional: no site publicado isso não é necessário, a chave já fica protegida no servidor. Só cole a sua aqui se estiver testando localmente (sem deploy). Pegue uma gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. Fica salva só neste dispositivo.</p>
     <input type="password" id="keyInput" placeholder="AIza...">
     <div class="modal-actions">
       <button class="btn btn-ghost" id="keyCancel">Cancelar</button>
@@ -431,14 +431,11 @@ const TEMAS = [
 const MODELO = "gemini-2.5-flash";   // troque por "gemini-2.5-flash-lite" pra mais requisições/dia
 const LIMIAR_CONFIANCA = 80;
 
-// COLE SUA CHAVE AQUI pra enviar o app já configurado aos colegas.
-// Deixe "" se NÃO quiser embutir (aí cada um cola a sua na engrenagem).
-const CHAVE_PADRAO = "AIzaSyASYecwfIVUN-TV1IBvV7788cKR8Zk-qQY";
-/* ============================================================ */
-
+// No site publicado, as chamadas passam por /api/identificar (a chave fica
+// só no servidor, como variável de ambiente). Colar uma chave aqui na
+// engrenagem é opcional — só necessário pra testar localmente, sem deploy.
 let API_KEY = "";
 try { API_KEY = localStorage.getItem("gemini_key") || ""; } catch(e){}
-if(!API_KEY) API_KEY = CHAVE_PADRAO;
 
 let TEMA = null;
 const album = [];
@@ -538,7 +535,7 @@ $("btnCam").onclick = ()=> requireKey() && $("fileCam").click();
 $("btnGallery").onclick = ()=> requireKey() && $("fileGal").click();
 $("fileCam").onchange = e => handleFile(e.target.files[0]);
 $("fileGal").onchange = e => handleFile(e.target.files[0]);
-function requireKey(){ if(!API_KEY){ $("modal").classList.add("show"); toast("Configure a chave da API primeiro."); return false; } return true; }
+function requireKey(){ if(!API_KEY && location.protocol==="file:"){ $("modal").classList.add("show"); toast("Rodando localmente: cole sua chave da API pra testar."); return false; } return true; }
 
 async function handleFile(file){
   if(!file) return;
@@ -598,8 +595,10 @@ Regras:
       }, required:["identificado","confianca","nome_popular","nome_cientifico","status_conservacao","curiosidades","especies_parecidas","mensagem","biomas","regioes","habitat_descricao","cenario_tipo","cenario_periodo","elementos_cenario","companheiros_habitat","curiosidade_habitat"] }
     }
   };
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${API_KEY}`;
-  const res=await chamarGeminiComRetry(url, body);
+  const usaProxy = !API_KEY;
+  const url = usaProxy ? "/api/identificar" : `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${API_KEY}`;
+  const corpoEnvio = usaProxy ? { modelo:MODELO, body } : body;
+  const res=await chamarGeminiComRetry(url, corpoEnvio);
   const json=await res.json();
   const texto=json?.candidates?.[0]?.content?.parts?.[0]?.text;
   if(!texto) throw new Error("A IA não retornou resposta. Tente outra foto.");
@@ -627,7 +626,7 @@ async function mensagemErroApi(res){
     detalhe=erro?.error?.message ? " Detalhe: "+erro.error.message : "";
   }catch(e){}
   if(res.status===429) return "Limite de requisições atingido. Tente de novo em alguns instantes."+detalhe;
-  if(res.status===400||res.status===403) return "Chave inválida ou sem permissão. Verifique na engrenagem."+detalhe;
+  if(res.status===400||res.status===403) return "Chave inválida ou sem permissão. Verifique na engrenagem (ou a variável GEMINI_API_KEY no servidor)."+detalhe;
   if([500,502,503,504].includes(res.status)) return "O serviço da IA ficou instável agora ("+res.status+"). Aguarde alguns segundos e tente novamente."+detalhe;
   return "Erro na API ("+res.status+")."+detalhe;
 }
