@@ -13,7 +13,130 @@ explica **o que fazer** e **por quê**.
 
 ---
 
-## 1. Visão geral — como o app funciona
+## 1. Baixar o código do repositório (clonar) — comece por aqui
+
+Todo o código oficial e **sempre mais atualizado** vive neste repositório:
+
+> **https://github.com/MathHenriq/Pokedex-da-Mata**
+
+"Clonar" significa **baixar uma cópia** desse repositório para o seu computador,
+de um jeito que permite **puxar as atualizações** depois com um comando só. É
+assim que a turma garante que está usando a versão mais recente, seguindo sempre
+o repositório oficial. Faça **exatamente** os passos abaixo, na ordem.
+
+### Passo 1.1 — Instalar o Git
+
+O Git é o programa que baixa e atualiza o código. Instale conforme o seu sistema:
+
+**Windows**
+1. Acesse **https://git-scm.com/download/win** — o download começa sozinho.
+2. Abra o instalador e vá clicando em **"Next"** até **"Install"** (pode aceitar
+   todas as opções padrão; não precisa mudar nada).
+3. Ao terminar, abra o menu Iniciar, digite **"Git Bash"** e abra. É nessa
+   janela preta que você vai digitar os comandos.
+
+**macOS**
+1. Abra o aplicativo **"Terminal"** (use a busca Spotlight: `Cmd + espaço`, digite
+   "Terminal").
+2. Digite o comando abaixo e tecle Enter:
+   ```bash
+   git --version
+   ```
+3. Se o Git não estiver instalado, o macOS abre uma janela oferecendo instalar as
+   "ferramentas de linha de comando" — clique em **"Instalar"** e aguarde.
+   *(Alternativa, se você usa o Homebrew: `brew install git`.)*
+
+**Linux (Ubuntu/Debian)**
+1. Abra o **Terminal**.
+2. Rode:
+   ```bash
+   sudo apt update
+   sudo apt install git -y
+   ```
+
+### Passo 1.2 — Conferir se o Git foi instalado
+
+No terminal (no Windows, use o **Git Bash**), digite e tecle Enter:
+
+```bash
+git --version
+```
+
+Deve aparecer algo como `git version 2.43.0`. Se apareceu um número de versão,
+**deu certo**. Se aparecer "comando não encontrado", refaça o Passo 1.1.
+
+### Passo 1.3 — (Opcional, só na primeira vez) dizer ao Git quem é você
+
+Isso só é necessário se você for **enviar mudanças** de volta ao GitHub. Para
+apenas baixar/atualizar, pode pular. Se quiser configurar:
+
+```bash
+git config --global user.name "Seu Nome"
+git config --global user.email "seu@email.com"
+```
+
+### Passo 1.4 — Escolher a pasta onde o projeto vai ficar
+
+Entre na pasta onde você quer guardar o projeto (por exemplo, a Área de
+Trabalho). Escolha **uma** linha conforme o seu sistema:
+
+```bash
+# Windows (Git Bash)
+cd ~/Desktop
+
+# macOS / Linux
+cd ~/Desktop
+```
+
+> `cd` quer dizer "entrar na pasta". `~` é a sua pasta pessoal.
+
+### Passo 1.5 — Clonar (baixar) o repositório
+
+Agora baixe o projeto com:
+
+```bash
+git clone https://github.com/MathHenriq/Pokedex-da-Mata.git
+```
+
+Isso cria uma pasta chamada **`Pokedex-da-Mata`** com todos os arquivos
+(`index.html`, a pasta `api/`, este guia, etc.). Entre nela:
+
+```bash
+cd Pokedex-da-Mata
+```
+
+Para ver os arquivos que vieram:
+
+```bash
+# Windows (Git Bash), macOS e Linux
+ls
+```
+
+Pronto: o código está no seu computador. Você já pode abrir o `index.html` no
+navegador (ver a Seção 7 sobre teste local) ou publicar no Vercel (Seção 6).
+
+### Passo 1.6 — Baixar as ATUALIZAÇÕES depois (manter sempre o repo mais novo)
+
+Sempre que o repositório oficial receber melhorias, **não precisa clonar de
+novo**. Dentro da pasta `Pokedex-da-Mata`, rode:
+
+```bash
+git pull origin main
+```
+
+Esse comando puxa as últimas mudanças da branch principal (`main`) e atualiza os
+seus arquivos. Faça isso antes de cada aula para garantir que a turma está com a
+versão mais recente.
+
+> **Dica:** se você (ou um aluno) tiver alterado arquivos localmente e o
+> `git pull` reclamar de conflito, o jeito mais simples para quem só quer a
+> versão oficial é guardar suas mudanças à parte com `git stash` e então rodar o
+> `git pull` de novo. Em turma, o ideal é que cada aluno trabalhe na sua própria
+> cópia/fork para evitar isso.
+
+---
+
+## 2. Visão geral — como o app funciona
 
 O caminho que uma foto percorre é simples:
 
@@ -48,10 +171,11 @@ copiá-la e gastar a sua cota. Colocando-a só no servidor, ela fica protegida.
 
 ---
 
-## 2. Pré-requisitos
+## 3. Pré-requisitos
 
 Você (instrutor) vai precisar de:
 
+- [ ] O **Git instalado** e o projeto **clonado** (Seção 1).
 - [ ] Uma **conta Google** (para criar a chave do Gemini).
 - [ ] Uma **conta no Vercel** (grátis) — pode entrar com o GitHub.
 - [ ] Uma **conta no GitHub** com este projeto (faça um *fork* ou suba os
@@ -60,11 +184,12 @@ Você (instrutor) vai precisar de:
 - [ ] *(Opcional, para testar local sem publicar)* nada além do navegador — dá
       para abrir o `index.html` direto e colar uma chave na engrenagem.
 
-Não é preciso instalar programas de desenvolvedor. Tudo é feito por sites.
+Fora o Git (Seção 1), não é preciso instalar programas de desenvolvedor. O resto
+é feito por sites.
 
 ---
 
-## 3. Criar 1 projeto no Google Cloud por turma e gerar a chave do Gemini
+## 4. Criar 1 projeto no Google Cloud por turma e gerar a chave do Gemini
 
 **Por que 1 projeto por turma?** O plano gratuito tem um **limite diário** de
 requisições. Se cada turma tiver o seu próprio projeto (e sua própria chave), o
@@ -92,7 +217,7 @@ Repita esse processo **uma vez por turma**.
 
 ---
 
-## 4. Configurar a variável GEMINI_API_KEY no Vercel (chave só no servidor)
+## 5. Configurar a variável GEMINI_API_KEY no Vercel (chave só no servidor)
 
 Aqui está o passo que mantém a chave segura. Em vez de escrever a chave no
 código, nós a guardamos como uma **"variável de ambiente"** no Vercel — uma
@@ -100,7 +225,7 @@ gaveta trancada do servidor. O proxy (`api/identificar.js`) lê dessa gaveta
 quando precisa.
 
 1. No painel do **Vercel**, abra o seu projeto (ou importe-o primeiro — veja a
-   seção 5 sobre deploy).
+   Seção 6 sobre deploy).
 2. Vá em **Settings** (Configurações) → **Environment Variables** (Variáveis de
    Ambiente).
 3. Crie uma nova variável:
@@ -120,7 +245,7 @@ quando precisa.
 
 ---
 
-## 5. Deploy no Vercel — passo a passo
+## 6. Deploy no Vercel — passo a passo
 
 "Deploy" é só **publicar** o app na internet, com um endereço próprio.
 
@@ -134,7 +259,7 @@ quando precisa.
    - **Root Directory**: deixe a raiz (onde está o `index.html`).
    - **Build/Output**: não precisa mexer — não há etapa de compilação.
 6. *(Recomendado fazer já agora)* abra **Environment Variables** e adicione a
-   `GEMINI_API_KEY` (seção 4). Assim o primeiro deploy já sai com a chave.
+   `GEMINI_API_KEY` (Seção 5). Assim o primeiro deploy já sai com a chave.
 7. Clique em **"Deploy"** e aguarde. Ao terminar, o Vercel mostra um endereço,
    algo como `https://pokedex-da-mata-suaturma.vercel.app`.
 8. Abra esse endereço no celular ou no computador e teste tirando uma foto.
@@ -150,7 +275,7 @@ isso — é só ter a pasta `api/` no projeto.
 
 ---
 
-## 6. Teste local (engrenagem/localStorage) vs produção (proxy)
+## 7. Teste local (engrenagem/localStorage) vs produção (proxy)
 
 O app foi feito para funcionar dos **dois jeitos**. Entender a diferença evita
 confusão na hora de testar.
@@ -183,7 +308,7 @@ confusão na hora de testar.
 
 ---
 
-## 7. "Um tema por aluno" — como personalizar a lente
+## 8. "Um tema por aluno" — como personalizar a lente
 
 Esta é a parte que **cada aluno** mexe. Todos os temas vivem numa lista chamada
 `TEMAS`, lá no `index.html` (procure por `const TEMAS = [`). Cada tema é um
@@ -246,7 +371,7 @@ Dois cuidados ao escolher:
 
 ---
 
-## 8. Quota do plano gratuito — e o que fazer se estourar
+## 9. Quota do plano gratuito — e o que fazer se estourar
 
 O plano gratuito do Gemini tem **limites** (quantas fotos por minuto e por dia).
 Numa turma inteira identificando ao mesmo tempo, é possível bater no teto. O
@@ -274,7 +399,7 @@ Se estourar com frequência, as saídas são:
    O `flash-lite` é mais econômico e **permite mais requisições por dia**. A
    qualidade continua boa para o uso em sala.
 
-2. **Isolar por turma** (já recomendado na seção 3): uma turma não consome a
+2. **Isolar por turma** (já recomendado na Seção 4): uma turma não consome a
    cota da outra.
 
 3. **Escalonar o uso:** evitar que a turma toda dispare no mesmo minuto; fazer
@@ -285,7 +410,7 @@ Se estourar com frequência, as saídas são:
 
 ---
 
-## 9. Avisos de segurança que já existem no app
+## 10. Avisos de segurança que já existem no app
 
 O app **não é** um guia para consumo, manuseio ou tratamento. Ele é educativo, e
 a IA **pode errar**. Alguns temas já trazem avisos embutidos (o campo `aviso`),
@@ -325,5 +450,6 @@ Recomendações para conduzir com a turma:
 | Nota de corte da confiança | `index.html`, `const LIMIAR_CONFIANCA = 80` |
 | O proxy que guarda a chave | `api/identificar.js` |
 | A chave secreta | Vercel → Settings → Environment Variables → `GEMINI_API_KEY` |
+| Baixar/atualizar o código | `git clone` / `git pull origin main` (Seção 1) |
 
 Bom curso! 🌱
