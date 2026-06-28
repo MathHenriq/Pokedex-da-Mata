@@ -1,6 +1,39 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<!--
+  ============================================================================
+  POKÉDEX DA MATA  —  app de uma página só (tudo vive dentro deste arquivo)
+  ============================================================================
+  COMO O APP FUNCIONA, EM UMA FRASE:
+  o aluno tira/envia uma foto -> a foto é mandada para a inteligência
+  artificial de visão do Google (Gemini) -> a IA devolve o nome da espécie
+  e várias informações -> o app desenha isso numa ficha bonita na tela.
+
+  POR QUE TUDO ESTÁ NUM ARQUIVO SÓ:
+  para um aluno do fundamental conseguir abrir, ler e mexer sem precisar
+  instalar nada. É só um arquivo HTML que roda direto no navegador.
+
+  AS 3 "PARTES" DESTE ARQUIVO:
+   1) <style> ...... a APARÊNCIA (cores, formas, animações)  -> bloco CSS
+   2) <body> ....... a ESTRUTURA visível (as telas, botões)  -> bloco HTML
+   3) <script> ..... o CÉREBRO (o que acontece ao clicar)     -> bloco JS
+
+  Os comentários abaixo explicam CADA bloco: o QUE faz e o PORQUÊ.
+  Comentário é texto que o computador ignora — não muda o app em nada.
+  ============================================================================
+-->
 <head>
+<!--
+  BLOCO <head>: são as "configurações da página" — coisas que o usuário não vê
+  diretamente, mas que preparam o ambiente:
+  - charset UTF-8: garante que acentos (á, ç, ã) apareçam certos.
+  - viewport: faz o layout caber e se ajustar na tela do celular.
+  - <link rel="icon" ...>: o desenho da folha que aparece na aba do navegador.
+  - preconnect + fonts.googleapis: baixa as fontes bonitas (Fraunces, etc.).
+  - leaflet.css / leaflet.js: a biblioteca pronta que desenha o MAPA do Brasil
+    (usada lá embaixo na aba "Localização"). É carregada de um site externo
+    (unpkg), por isso o app precisa de internet para o mapa aparecer.
+-->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Pokédex da Mata</title>
@@ -11,6 +44,30 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
+/* ==========================================================================
+   BLOCO CSS — TODA A APARÊNCIA DO APP
+   ==========================================================================
+   CSS é a "linguagem da decoração": ele diz cor, tamanho, espaçamento,
+   sombra e animação de cada coisa. Nada aqui muda O QUE o app faz — só muda
+   COMO ele se parece. Se você mexer num número de cor ou tamanho, o app
+   continua funcionando, só fica com outra cara.
+
+   AS :root --variaveis ABAIXO são "potinhos de cor" reutilizáveis.
+   Em vez de repetir o mesmo verde em 50 lugares, damos um nome a ele
+   (--glow-primary) e usamos o nome. Trocando o potinho num lugar só, a cor
+   muda no app inteiro. IMPORTANTE: lá no JavaScript, quando o aluno abre um
+   tema (ex.: Frutas), o app TROCA esses potinhos pela cor do tema — é assim
+   que o app inteiro "veste" a cor da categoria escolhida.
+
+   Guia rápido dos potinhos:
+   --bg-0 / --bg-1 .... fundos escuros (quase preto esverdeado).
+   --glow-primary ..... a cor principal que brilha (verde por padrão).
+   --glow-secondary ... a cor de apoio (azul-ciano).
+   --glow-warm ........ um toque mais quente (verde-limão).
+   --text / --text-dim  cor do texto normal e do texto mais apagado.
+   --surface .......... o "vidro fosco" dos cartões (fundo semi-transparente).
+   --danger ........... laranja de alerta (usado nos avisos de segurança).
+   ========================================================================== */
 :root{
   --bg-0:#040a07;
   --bg-1:#06100b;
@@ -23,11 +80,23 @@
   --surface-line:rgba(255,255,255,0.10);
   --danger:#f0723e;
 }
+/* "Zera" os espaçamentos que o navegador coloca sozinho, pra começarmos do
+   zero e controlarmos tudo. box-sizing:border-box facilita medir tamanhos. */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
+/* O fundo do app: a cor base, e dois "véus" decorativos por cima (::before é
+   o brilho colorido suave dos cantos; ::after é um chuvisco de textura bem
+   fraquinho). São só enfeite; transition:background deixa a troca de cor do
+   tema acontecer suavemente em vez de "piscar". */
 body{background:var(--bg-0);color:var(--text);font-family:'Hanken Grotesk',sans-serif;min-height:100vh;overflow-x:hidden;position:relative;transition:background .6s}
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;transition:.6s;background:radial-gradient(60% 50% at 18% 8%, color-mix(in srgb, var(--glow-primary) 14%, transparent), transparent 60%),radial-gradient(50% 40% at 88% 22%, color-mix(in srgb, var(--glow-secondary) 12%, transparent), transparent 60%),radial-gradient(70% 60% at 50% 110%, color-mix(in srgb, var(--glow-primary) 9%, transparent), transparent 55%),linear-gradient(180deg,var(--bg-1),var(--bg-0))}
 body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* .app é a "moldura" central: limita a largura (max-width:580px) e centraliza,
+   pra ficar com cara de aplicativo de celular mesmo numa tela grande.
+   AS "TELAS": o app tem 3 telas (Catálogo, Safari, Identificar) que vivem no
+   mesmo arquivo. Em vez de trocar de página, escondemos/mostramos cada uma:
+   .screen fica escondida (display:none) e só a que tem a classe .active
+   aparece. O JavaScript adiciona/remove .active pra "navegar". */
 .app{position:relative;z-index:1;max-width:580px;margin:0 auto;padding:0 20px 120px;min-height:100vh;display:flex;flex-direction:column}
 .screen{display:none}
 .screen.active{display:flex;flex-direction:column;animation:fade .45s ease}
@@ -39,6 +108,12 @@ header{padding:40px 0 18px;text-align:center;position:relative}
 .eyebrow{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--glow-primary);opacity:.85}
 h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(40px,11vw,58px);line-height:1.02;letter-spacing:-.02em;margin:10px 0 8px;padding-top:.12em;background:linear-gradient(140deg,#fff,var(--glow-primary) 60%,var(--glow-secondary));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .subtitle{color:var(--text-dim);font-size:14px;max-width:340px;margin:0 auto;line-height:1.5}
+/* OS CARTÕES DO CATÁLOGO (Aves, Frutas, Insetos...).
+   .cat-grid arruma os cartões em 2 colunas. Cada .theme-card é um cartão com
+   uma foto de fundo translúcida, tingida com a cor daquele tema. Os vários
+   ::before/::after e .tc-* são só camadas de enfeite (lavagem de cor, cantos
+   decorativos, sombra ao passar o mouse). A cor de cada cartão vem da
+   variável --c, que o JavaScript preenche com a cor do tema. */
 .cat-grid{margin-top:30px;display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
 .theme-card{
   position:relative;aspect-ratio:3/4;border-radius:22px;cursor:pointer;overflow:hidden;isolation:isolate;
@@ -90,6 +165,8 @@ h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(40px,11vw,58px);
 .bar-sub{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow-primary);margin-top:3px}
 .warn{margin-top:14px;border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.45;color:#f0c5a0;background:rgba(240,114,62,.08);border:1px solid rgba(240,114,62,.22);display:flex;gap:9px;align-items:flex-start}
 .warn svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:var(--danger)}
+/* O "CARTÃO DE CAPTURA": a caixa central da tela Identificar, com a lente
+   girando e os botões "Tirar foto" / "Galeria". É onde o aluno começa. */
 .capture-card{margin-top:16px;border-radius:26px;padding:26px 22px 24px;text-align:center;background:var(--surface);border:1px solid var(--surface-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 30px 80px -40px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.04);position:relative;overflow:hidden}
 .corner{position:absolute;width:34px;height:34px;border:1.5px solid var(--glow-primary);opacity:.4}
 .corner.tl{top:14px;left:14px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
@@ -107,7 +184,12 @@ h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(40px,11vw,58px);
 .btn-primary:active{transform:translateY(2px)}
 .btn-ghost{background:color-mix(in srgb,var(--glow-primary) 6%,transparent);color:var(--text);border:1px solid var(--surface-line)}
 .btn-ghost:active{transform:translateY(2px)}
+/* Escondemos o seletor de arquivo padrão (feio) do navegador. Os botões
+   bonitos "Tirar foto"/"Galeria" é que disparam esse seletor por baixo. */
 input[type=file]{display:none}
+/* A "PRÉVIA" da foto + o efeito SCANNER: enquanto a IA pensa, passamos uma
+   linha de luz (.scan-line) por cima da foto e um véu escuro, pra dar a
+   sensação de "analisando". É só visual; não interfere na identificação. */
 .stage{margin-top:20px}
 .preview-wrap{position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--surface-line);background:#000;display:none}
 .preview-wrap.show{display:block;animation:fade .4s ease}
@@ -120,6 +202,11 @@ input[type=file]{display:none}
 .analysing{display:none;text-align:center;margin-top:16px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--glow-primary)}
 .analysing.on{display:block;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.4}}
+/* A FICHA DE RESULTADO: o cartão que aparece DEPOIS que a IA identifica a
+   espécie — com o nome popular, nome científico, % de certeza, conservação,
+   curiosidades e as abas. Começa escondida (display:none) e o JavaScript
+   adiciona .show quando a resposta chega. .uncertain (mais abaixo) é a versão
+   "não consegui ter certeza", mostrada quando a confiança fica baixa. */
 .result{margin-top:18px;display:none}
 .result.show{display:block}
 .result .card{border-radius:22px;padding:22px;background:var(--surface);border:1px solid var(--surface-line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -146,6 +233,10 @@ input[type=file]{display:none}
 .uncertain p{color:var(--text-dim);font-size:14px;line-height:1.5}
 .again{margin-top:16px;width:100%;border:1px solid var(--surface-line);background:color-mix(in srgb,var(--glow-primary) 5%,transparent);color:var(--text);border-radius:14px;padding:14px;font-family:'Hanken Grotesk';font-weight:700;font-size:14px;cursor:pointer}
 .again:active{transform:translateY(2px)}
+/* O ÁLBUM DE DESCOBERTAS: a galeria, no rodapé da tela Identificar, com as
+   miniaturas de tudo que o aluno já identificou nesta visita. Importante: o
+   álbum vive só na memória da aba aberta — se a página for recarregada, ele
+   zera (não é salvo). */
 .album{margin-top:38px}
 .album-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
 .album-head h2{font-family:'Fraunces',serif;font-size:22px;font-weight:600}
@@ -155,6 +246,11 @@ input[type=file]{display:none}
 .album-item{border-radius:14px;overflow:hidden;border:1px solid var(--surface-line);background:var(--surface);position:relative;aspect-ratio:1}
 .album-item img{width:100%;height:100%;object-fit:cover;opacity:.92}
 .album-item span{position:absolute;left:0;right:0;bottom:0;padding:14px 8px 6px;font-size:10.5px;font-weight:600;line-height:1.15;background:linear-gradient(transparent,rgba(4,10,7,.92));text-align:center}
+/* A ENGRENAGEM (canto superior direito) e a JANELA (.modal) que ela abre.
+   Serve só para colar uma chave da API quando se testa o app LOCALMENTE
+   (sem deploy). No site publicado no Vercel não é preciso — a chave já fica
+   guardada no servidor. O .toast é aquela tarjinha que sobe e some ("Chave
+   salva."). */
 .gear{position:fixed;top:16px;right:16px;z-index:30;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--surface-line);color:var(--text-dim);cursor:pointer;backdrop-filter:blur(8px)}
 .gear svg{width:19px;height:19px}
 .modal{position:fixed;inset:0;z-index:40;background:rgba(2,6,4,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:22px}
@@ -171,7 +267,10 @@ input[type=file]{display:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);opacity:.6}
 
-/* ============ ABAS (Sobre / Localização / Habitat) ============ */
+/* ============ ABAS (Sobre / Localização / Habitat) ============
+   Dentro da ficha de resultado há 3 abas. Só uma fica visível por vez:
+   a aba clicada ganha a classe .active e o painel correspondente ganha .on
+   (quem faz essa troca é o JavaScript, lá embaixo na função bindTabs). */
 .tabs{display:flex;gap:6px;margin:18px -4px 0;padding:5px;background:rgba(0,0,0,.28);border:1px solid var(--surface-line);border-radius:14px}
 .tab{flex:1;border:none;background:transparent;color:var(--text-dim);font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:12.5px;padding:10px 6px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:.25s;letter-spacing:.01em}
 .tab svg{width:14px;height:14px}
@@ -179,7 +278,12 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 .tab-panel{display:none;animation:fade .35s ease}
 .tab-panel.on{display:block}
 
-/* ============ LOCALIZAÇÃO (mapa real Leaflet) ============ */
+/* ============ LOCALIZAÇÃO (mapa real Leaflet) ============
+   A aba "Localização" mostra um MAPA de verdade do Brasil (biblioteca Leaflet,
+   carregada lá no <head>). Os estilos abaixo deixam o mapa, os controles de
+   zoom e os "alfinetes" dos biomas combinando com o visual escuro do app.
+   O .biome-marker é o pontinho que marca cada bioma; o .primary pulsa, porque
+   é o bioma principal da espécie. */
 .map-box{margin-top:16px;height:340px;border-radius:18px;overflow:hidden;border:1px solid var(--surface-line);background:#06121a;box-shadow:0 26px 64px -42px #000, inset 0 0 0 1px rgba(255,255,255,.03)}
 .leaflet-container{background:#06121a;font-family:'Hanken Grotesk',sans-serif}
 .leaflet-control-zoom a{background:rgba(4,10,7,.82)!important;color:var(--text)!important;border-color:var(--surface-line)!important;backdrop-filter:blur(6px)}
@@ -205,7 +309,13 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 .region-pill{font-size:12.5px;padding:6px 11px;border-radius:999px;background:color-mix(in srgb,var(--glow-primary) 8%,transparent);border:1px solid color-mix(in srgb,var(--glow-primary) 24%,transparent);color:var(--text);display:inline-flex;align-items:center;gap:6px}
 .region-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--glow-primary);box-shadow:0 0 8px var(--glow-primary)}
 
-/* ============ HABITAT — cena fotográfica viva ============ */
+/* ============ HABITAT — cena fotográfica viva ============
+   A aba "Habitat" monta uma CENA: uma foto do bioma com zoom lento (Ken
+   Burns), e por cima vários efeitos de luz conforme o período do dia
+   (per-dia, per-amanhecer, per-crepusculo, per-noite). Cada classe per-*
+   muda o brilho/cor da foto, liga estrelas à noite, raios de sol de dia, e
+   troca pólen (dia) por vaga-lumes (noite). É bastante enfeite — o aluno
+   troca o período nos botões da cena. Nada disso afeta a identificação. */
 .scene{position:relative;margin-top:16px;border-radius:22px;overflow:hidden;border:1px solid var(--surface-line);aspect-ratio:3/2;background:#04100a;box-shadow:0 30px 72px -42px #000;--accent:#3ef0a0}
 
 /* foto real do bioma com Ken Burns (zoom/pan lento) */
@@ -261,7 +371,12 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 .comp-list{display:flex;flex-wrap:wrap;gap:7px}
 .comp{font-size:12.5px;padding:6px 11px;border-radius:10px;background:color-mix(in srgb,var(--glow-warm) 7%,transparent);border:1px solid color-mix(in srgb,var(--glow-warm) 22%,transparent);color:#eff0c5}
 
-/* ============ SAFARI (coleção viva por bioma) ============ */
+/* ============ SAFARI (coleção viva por bioma) ============
+   O "Safari" é uma forma divertida de ver o álbum: cada espécie já descoberta
+   vira um bichinho que CAMINHA pela cena (.safari-roam, se for animal) ou uma
+   plantinha FINCADA no chão (.garden-plant, se for planta/fungo). Tocar no
+   bichinho mostra o nome. As animações abaixo fazem eles andarem e balançarem.
+   É só apresentação dos itens que o aluno já coletou. */
 .safari-cta{margin:18px auto 0;display:flex;align-items:center;gap:9px;border:1px solid color-mix(in srgb,var(--glow-primary) 35%,var(--surface-line));background:color-mix(in srgb,var(--glow-primary) 10%,transparent);color:var(--text);font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:13px;padding:11px 18px;border-radius:999px;cursor:pointer;transition:transform .15s}
 .safari-cta:active{transform:translateY(2px)}
 .safari-cta-count{font-family:'Space Mono',monospace;font-size:11px;background:var(--glow-primary);color:#04140d;border-radius:999px;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
@@ -311,14 +426,32 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 </style>
 </head>
 <body>
+<!--
+  ==========================================================================
+  BLOCO HTML (<body>) — A ESTRUTURA VISÍVEL
+  ==========================================================================
+  Aqui ficam as "caixas" da tela. Pense em HTML como o esqueleto: ele diz
+  QUAIS elementos existem (títulos, botões, imagens), o CSS lá de cima diz
+  como eles se parecem, e o <script> lá embaixo dá vida a eles.
+  Muitas caixas começam VAZIAS aqui (ex.: <div id="catGrid">) e são
+  preenchidas pelo JavaScript quando o app abre. Por isso, se você ler só o
+  HTML, vai parecer que falta coisa — o conteúdo é montado na hora.
+  ==========================================================================
+-->
 
+<!-- ENGRENAGEM: botãozinho fixo no canto. Abre a janela de colar a chave da
+     API. Só é necessário ao testar localmente (sem deploy). -->
 <div class="gear" id="gear" title="Configurar chave">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
 </div>
 
 <div class="app">
 
-  <!-- ===================== TELA: CATÁLOGO ===================== -->
+  <!-- ===================== TELA: CATÁLOGO =====================
+       A 1ª tela (a que abre — repare no "active"). Mostra o título e a grade
+       das 10 lentes/temas. A grade <div id="catGrid"> nasce VAZIA: é o
+       JavaScript (função renderCatalog) que cria os cartões a partir da lista
+       TEMAS. O botão "Ver meu Safari" leva para a tela do Safari. -->
   <div class="screen active" id="screenCatalog">
     <header>
       <span class="spark s1"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg></span>
@@ -332,7 +465,11 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
     <footer>Floresta + Tecnologia · IA de visão</footer>
   </div>
 
-  <!-- ===================== TELA: SAFARI (coleção por bioma) ===================== -->
+  <!-- ===================== TELA: SAFARI (coleção por bioma) =====================
+       A 2ª tela. Reúne tudo que o aluno já descobriu, separado por bioma
+       (Amazônia, Cerrado...). As caixas <div id="safariJumpNav"> e
+       <div id="safariFull"> nascem vazias e são montadas pela função
+       renderSafariCompleto quando o aluno entra aqui. -->
   <div class="screen" id="screenSafari">
     <div class="bar">
       <button class="back" id="btnBackSafari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
@@ -345,7 +482,12 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
     <div id="safariFull"></div>
   </div>
 
-  <!-- ===================== TELA: IDENTIFICAR ===================== -->
+  <!-- ===================== TELA: IDENTIFICAR =====================
+       A 3ª tela — o coração do app. Abre quando o aluno escolhe um tema.
+       Tem: a barra de voltar/título, uma caixa de AVISO de segurança (só
+       aparece em temas que têm aviso, ex.: cogumelos), o cartão de captura
+       (Tirar foto / Galeria), a área da prévia + scanner, a ficha de
+       resultado (<div id="result">, montada pelo JavaScript) e o álbum. -->
   <div class="screen" id="screenIdentify">
     <div class="bar">
       <button class="back" id="btnBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
@@ -355,6 +497,9 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
       </div>
     </div>
 
+    <!-- CAIXA DE AVISO: fica escondida por padrão (display:none). O JavaScript
+         só a mostra, com o texto certo, quando o tema escolhido tem um campo
+         "aviso" (ex.: o aviso de NUNCA comer cogumelo identificado por IA). -->
     <div class="warn" id="warnBox" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
       <span id="warnText"></span>
@@ -377,6 +522,9 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
           Galeria
         </button>
       </div>
+      <!-- Dois seletores de imagem invisíveis. "fileCam" tem capture="environment",
+           que pede a câmera traseira do celular; "fileGal" abre a galeria. Os
+           botões bonitos acima é que disparam estes seletores. -->
       <input type="file" id="fileCam" accept="image/*" capture="environment">
       <input type="file" id="fileGal" accept="image/*">
     </div>
@@ -402,6 +550,10 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 
 </div>
 
+<!-- JANELA DA CHAVE (modal): aparece ao clicar na engrenagem. Serve para colar
+     uma chave da API Gemini APENAS quando se testa o app localmente, sem
+     deploy. No site publicado isso não é necessário — a chave já está segura no
+     servidor. O que for digitado aqui fica salvo só neste aparelho/navegador. -->
 <div class="modal" id="modal">
   <div class="modal-card">
     <h3>Chave da API Gemini</h3>
@@ -417,10 +569,50 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============================================================
-   CATÁLOGO DE TEMAS — cada item é um app possível.
-   Pra criar um novo tema, copie um objeto e troque os campos.
-   ============================================================ */
+/* ##########################################################################
+   BLOCO JAVASCRIPT (<script>) — O CÉREBRO DO APP
+   ##########################################################################
+   Se o HTML é o esqueleto e o CSS a roupa, o JavaScript é o que faz tudo
+   ACONTECER: reagir a cliques, ler a foto, conversar com a inteligência
+   artificial e desenhar o resultado na tela.
+
+   Como ler este bloco sem se perder: ele está organizado em "seções". Cada
+   seção tem um cabeçalho como este e cuida de uma parte:
+     1. A LISTA DE TEMAS (TEMAS) e as configurações (modelo, confiança, chave).
+     2. Montar o catálogo e navegar entre as telas.
+     3. Ler a foto e CHAMAR A IA (a função identificar + o retry).
+     4. Desenhar a ficha de resultado e as 3 abas.
+     5. O mapa (Localização), a cena (Habitat) e o Safari.
+   ########################################################################## */
+
+/* ==========================================================================
+   SEÇÃO 1 — A LISTA DE TEMAS (é AQUI que cada aluno mexe!)
+   ==========================================================================
+   TEMAS é uma LISTA. Cada item entre { } é UMA lente/categoria do app
+   (um tema = o projeto de um aluno). Para criar/ajustar um tema, copie um
+   bloco { ... }, cole e troque os campos. O que cada campo significa:
+
+     id ............ apelido curto, sem espaços nem acento (ex.: "aves").
+                     É a "etiqueta" interna; aparece na URL das fotos e liga o
+                     tema ao seu reino/bioma. Deve ser ÚNICO.
+     nome .......... o título que aparece no cartão (ex.: "Aves do Brasil").
+     desc .......... a frase pequena embaixo do nome no cartão.
+     alvo .......... O QUE a IA deve procurar na foto (ex.: "ave brasileira").
+                     Entra direto no pedido feito à IA.
+     especialista .. o "personagem" que a IA encarna ao responder (ex.: "um
+                     ornitólogo..."). Isso melhora MUITO a qualidade e o tom
+                     da resposta. Quanto mais específico, melhor.
+     cor / cor2 .... as DUAS cores do tema (em código hexadecimal, tipo
+                     #3ef0a0). O app inteiro se pinta com elas quando o tema
+                     abre. ATENÇÃO ao contraste: evite cores muito escuras
+                     (o fundo já é escuro) — veja o aviso no GUIA-DO-INSTRUTOR.
+     icone ......... um emoji que aparece junto da espécie no Safari.
+     aviso ......... (OPCIONAL) texto de segurança. Se existir, o app mostra a
+                     tarja de alerta E pede para a IA repetir o aviso numa
+                     curiosidade. Use em temas com risco (cogumelos, répteis,
+                     plantas medicinais). Temas sem risco simplesmente não têm
+                     este campo.
+   ========================================================================== */
 const TEMAS = [
   { id:"aves", nome:"Aves do Brasil", desc:"Pássaros e aves nativas",
     alvo:"ave brasileira", especialista:"um ornitólogo brasileiro especialista nas aves do Brasil",
@@ -466,22 +658,62 @@ const TEMAS = [
     cor:"#4aa8f0", cor2:"#3ed8f0", icone:"🐟" }
 ];
 
+/* --------------------------------------------------------------------------
+   CONFIGURAÇÕES GERAIS
+   --------------------------------------------------------------------------
+   MODELO: qual "cérebro" da IA usar. O gemini-2.5-flash é rápido e bom. Se a
+   turma estourar o limite diário do plano gratuito, troque por
+   "gemini-2.5-flash-lite", que é mais leve e permite mais fotos por dia
+   (detalhes no GUIA-DO-INSTRUTOR).
+   LIMIAR_CONFIANCA: a "nota de corte". Se a IA tiver menos de 80% de certeza,
+   o app não arrisca um chute — mostra a tela educada "Não consegui ter
+   certeza". Suba o número para ser mais exigente, abaixe para ser mais
+   tolerante. */
 const MODELO = "gemini-2.5-flash";   // troque por "gemini-2.5-flash-lite" pra mais requisições/dia
 const LIMIAR_CONFIANCA = 80;
 
-// No site publicado, as chamadas passam por /api/identificar (a chave fica
-// só no servidor, como variável de ambiente). Colar uma chave aqui na
-// engrenagem é opcional — só necessário pra testar localmente, sem deploy.
+/* --------------------------------------------------------------------------
+   A CHAVE DA API — o ponto mais importante de segurança
+   --------------------------------------------------------------------------
+   Existem DOIS jeitos do app falar com a IA:
+
+   (A) PRODUÇÃO (site publicado no Vercel) — o jeito seguro e recomendado:
+       o app NÃO tem a chave. Ele manda a foto para o nosso próprio endereço
+       /api/identificar (o arquivo api/identificar.js). Esse "proxy" roda no
+       servidor, pega a chave guardada lá (variável GEMINI_API_KEY) e só ele
+       fala com o Google. Assim a chave NUNCA aparece para o aluno/navegador.
+
+   (B) TESTE LOCAL (abrindo o arquivo direto, sem deploy) — o jeito de
+       conveniência: aí não existe servidor, então o aluno cola a própria
+       chave na engrenagem. Ela fica salva só naquele navegador (localStorage)
+       e é usada direto. Serve para testar rápido na máquina.
+
+   A linha abaixo só TENTA lembrar uma chave que tenha sido colada antes neste
+   navegador. Se não houver, API_KEY fica vazia — e aí o app usa o caminho (A),
+   o proxy. (O try/catch existe porque alguns navegadores bloqueiam o
+   localStorage; nesse caso seguimos sem chave, sem quebrar.) */
 let API_KEY = "";
 try { API_KEY = localStorage.getItem("gemini_key") || ""; } catch(e){}
 
+/* TEMA guarda o tema atualmente aberto (preenchido em abrirTema).
+   album é a lista, só na memória da aba, das espécies já descobertas nesta
+   visita — some se a página for recarregada. */
 let TEMA = null;
 const album = [];
 
+/* Três ajudantes pequenos usados o tempo todo:
+   $("algo") .... atalho para "pegue o elemento com este id" (digitar menos).
+   SPARK ........ o desenho da estrelinha (em formato SVG), reaproveitado.
+   esperar(ms) .. faz o código "dar uma pausa" de alguns milésimos de segundo
+                  (usado entre as tentativas do retry). */
 const $ = id => document.getElementById(id);
 const SPARK = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>';
 const esperar = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+/* REINO: a classificação biológica que aparece no topo de cada cartão
+   (ex.: "Animalia · Aves"). Também serve para o Safari decidir se um item é
+   bicho (Animalia, "caminha") ou planta/fungo (fica "plantado"). A chave de
+   cada linha é o "id" do tema. */
 const REINO = {
   aves:"Animalia · Aves", insetos:"Animalia · Insecta", mamiferos:"Animalia · Mammalia",
   repteis:"Animalia · Reptilia", peixes:"Animalia · Pisces",
@@ -508,6 +740,14 @@ function fotoTema(id){
   return pid ? `https://images.unsplash.com/${pid}?auto=format&fit=crop&w=600&h=800&q=70` : "";
 }
 
+/* ==========================================================================
+   SEÇÃO 2 — MONTAR O CATÁLOGO E NAVEGAR ENTRE AS TELAS
+   ==========================================================================
+   renderCatalog: percorre a lista TEMAS e, para CADA tema, gera o HTML de um
+   cartão (foto de fundo, número, reino, nome e descrição), juntando tudo num
+   texto só que é jogado dentro da grade <div id="catGrid">. É por isso que a
+   grade nascia vazia no HTML: ela é preenchida aqui. O onclick de cada cartão
+   chama abrirTema(id) para entrar naquele tema. */
 function renderCatalog(){
   $("catGrid").innerHTML = TEMAS.map((t,i)=>`
     <div class="theme-card" style="--c:${t.cor};--c2:${t.cor2||t.cor}" onclick="abrirTema('${t.id}')">
@@ -527,6 +767,13 @@ function renderCatalog(){
     </div>`).join("");
 }
 
+/* abrirTema: roda quando o aluno toca num cartão do catálogo. Ele:
+   1) descobre qual tema foi escolhido e guarda em TEMA;
+   2) PINTA o app inteiro com as cores daquele tema (troca os "potinhos" de cor
+      --glow-* que vimos no CSS — por isso tudo muda de cor de uma vez);
+   3) escreve o título/subtítulo da barra;
+   4) mostra a tarja de aviso SE o tema tiver o campo "aviso";
+   5) esconde resultados antigos e troca a tela do Catálogo pela Identificar. */
 function abrirTema(id){
   TEMA = TEMAS.find(t=>t.id===id);
   const r = document.documentElement.style;
@@ -544,12 +791,18 @@ function abrirTema(id){
   window.scrollTo({top:0});
 }
 
+/* Os ".onclick = ..." abaixo são os "ouvidos" dos botões de navegação: dizem o
+   que fazer quando cada um é tocado. Aqui é só esconder uma tela e mostrar
+   outra (adicionando/removendo a classe .active) e rolar para o topo.
+   btnBack: volta da tela Identificar para o Catálogo. */
 $("btnBack").onclick = ()=>{
   $("screenIdentify").classList.remove("active");
   $("screenCatalog").classList.add("active");
   window.scrollTo({top:0});
 };
 
+/* btnSafari / btnBackSafari: abrem e fecham a tela do Safari. Ao abrir,
+   chamamos renderSafariCompleto() para montar a coleção na hora. */
 $("btnSafari").onclick = ()=>{
   renderSafariCompleto();
   $("screenCatalog").classList.remove("active");
@@ -562,19 +815,45 @@ $("btnBackSafari").onclick = ()=>{
   window.scrollTo({top:0});
 };
 
+/* toast: mostra aquela tarjinha que sobe, espera ~2,6s e some sozinha. Serve
+   para avisos rápidos ("Chave salva."). */
 let toastT;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
 
+/* Engrenagem e janela da chave (só úteis no teste local):
+   - gear: abre a janela já com a chave atual preenchida.
+   - keyCancel: fecha sem salvar.
+   - keySave: guarda a chave digitada (sem espaços) no navegador e avisa. */
 $("gear").onclick = ()=>{ $("keyInput").value=API_KEY; $("modal").classList.add("show"); };
 $("keyCancel").onclick = ()=> $("modal").classList.remove("show");
 $("keySave").onclick = ()=>{ API_KEY=$("keyInput").value.trim(); try{localStorage.setItem("gemini_key",API_KEY);}catch(e){} $("modal").classList.remove("show"); toast(API_KEY?"Chave salva.":"Chave removida."); };
 
+/* Botões de foto: "Tirar foto" e "Galeria" só disparam os seletores de imagem
+   invisíveis. Quando o aluno escolhe a imagem, o evento onchange chama
+   handleFile com o arquivo. */
 $("btnCam").onclick = ()=> requireKey() && $("fileCam").click();
 $("btnGallery").onclick = ()=> requireKey() && $("fileGal").click();
 $("fileCam").onchange = e => handleFile(e.target.files[0]);
 $("fileGal").onchange = e => handleFile(e.target.files[0]);
+/* requireKey: um guarda gentil. SÓ quando o app está sendo aberto como arquivo
+   local (location.protocol === "file:") E não há chave colada, ele abre a
+   janela pedindo a chave e impede a foto. No site publicado isso nunca trava,
+   porque lá o proxy resolve a chave. */
 function requireKey(){ if(!API_KEY && location.protocol==="file:"){ $("modal").classList.add("show"); toast("Rodando localmente: cole sua chave da API pra testar."); return false; } return true; }
 
+/* ==========================================================================
+   SEÇÃO 3 — LER A FOTO E CHAMAR A INTELIGÊNCIA ARTIFICIAL
+   ==========================================================================
+   handleFile é o "maestro" do momento da identificação. Passo a passo:
+   1) confere se há mesmo um arquivo;
+   2) lê a foto e transforma em texto (dataUrl) para poder mostrar e enviar;
+   3) mostra a prévia, liga o efeito scanner e o "Analisando imagem…";
+   4) separa o "base64" (a foto codificada em texto) e o tipo (jpeg/png);
+   5) CHAMA identificar(...) — é aqui que a IA entra — e, ao receber a
+      resposta, manda mostrarResultado desenhar a ficha;
+   6) se algo der errado, mostra um erro amigável;
+   7) no "finally" (sempre, dando certo ou não), desliga o scanner.
+   O "async/await" é só o jeito de esperar a IA responder sem travar a tela. */
 async function handleFile(file){
   if(!file) return;
   const dataUrl = await readAsDataURL(file);
@@ -590,8 +869,20 @@ async function handleFile(file){
   catch(err){ console.error(err); mostrarErro(err.message); }
   finally{ $("scan").classList.remove("on"); $("analysing").classList.remove("on"); }
 }
+/* readAsDataURL: usa o leitor de arquivos do navegador para converter a imagem
+   escolhida num texto (data URL). Esse texto serve tanto para MOSTRAR a prévia
+   quanto para ENVIAR a foto para a IA. */
 function readAsDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(new Error("Não consegui ler a imagem.")); r.readAsDataURL(file); }); }
 
+/* --------------------------------------------------------------------------
+   identificar() — O CORAÇÃO: monta o pedido e conversa com a IA
+   --------------------------------------------------------------------------
+   Primeiro montamos o "prompt": as INSTRUÇÕES em português que a IA vai seguir.
+   Repare que ele usa os campos do tema atual: TEMA.especialista (o personagem
+   que a IA encarna) e TEMA.alvo (o que procurar). As "Regras:" abaixo são o
+   pulo do gato — elas obrigam a IA a: não chutar sem 80% de certeza, responder
+   em português, dar nome científico certo, dizer os biomas, o habitat, etc.
+   Mudar essas regras muda o comportamento do app para TODOS os temas. */
 async function identificar(base64, mime){
   let prompt =
 `Você é ${TEMA.especialista}. Analise a imagem e identifique a ${TEMA.alvo} presente nela.
@@ -611,8 +902,18 @@ Regras:
 - Em "elementos_cenario", liste 4-7 elementos visuais característicos do ambiente (ex.: "árvores emergentes", "epífitas", "rio escuro", "cipós", "pedras", "neblina matinal").
 - Em "companheiros_habitat", liste 3-5 espécies (animais ou plantas) que dividem o habitat com a identificada.
 - Em "curiosidade_habitat", traga UMA curiosidade marcante sobre como ela usa/depende do habitat.`;
+  /* Se o tema tem aviso de segurança, pedimos para a IA repetir esse aviso
+     dentro de uma curiosidade — assim ele aparece de novo na ficha. */
   if(TEMA.aviso) prompt += `\n- Inclua naturalmente este aviso de segurança em uma das curiosidades: "${TEMA.aviso}"`;
 
+  /* "body" é o pacote que mandamos para a IA. Ele leva:
+     - contents: as INSTRUÇÕES (o prompt) + a FOTO (em base64).
+     - generationConfig: ajustes da resposta. temperature:0.2 deixa a IA mais
+       "séria"/objetiva (menos invenção). responseMimeType + responseSchema
+       OBRIGAM a IA a responder num formato fixo (JSON) com EXATAMENTE estes
+       campos (nome_popular, nome_cientifico, biomas, habitat...). Isso é o que
+       garante que o app sempre receba os dados arrumadinhos para desenhar a
+       ficha; "required" lista os campos que não podem faltar. */
   const body = {
     contents:[{ parts:[ {text:prompt}, {inline_data:{mime_type:mime, data:base64}} ] }],
     generationConfig:{
@@ -633,9 +934,20 @@ Regras:
       }, required:["identificado","confianca","nome_popular","nome_cientifico","status_conservacao","curiosidades","especies_parecidas","mensagem","biomas","regioes","habitat_descricao","cenario_tipo","cenario_periodo","elementos_cenario","companheiros_habitat","curiosidade_habitat"] }
     }
   };
+  /* AQUI ESTÁ A DECISÃO DOS DOIS CAMINHOS (a parte de segurança):
+     - SEM chave colada (usaProxy = true): mandamos para o NOSSO endereço
+       /api/identificar. O servidor é quem tem a chave e fala com o Google.
+       Este é o caminho do site publicado. Repare que mandamos também o nome do
+       MODELO, porque o proxy precisa saber qual usar.
+     - COM chave colada (teste local): falamos DIRETO com o Google, anexando a
+       chave na URL. Só acontece quando alguém colou a chave na engrenagem. */
   const usaProxy = !API_KEY;
   const url = usaProxy ? "/api/identificar" : `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${API_KEY}`;
   const corpoEnvio = usaProxy ? { modelo:MODELO, body } : body;
+  /* Enviamos e esperamos a resposta (com tentativas extras — ver retry).
+     A resposta vem embrulhada; a IA coloca o texto JSON lá no fundo, em
+     candidates[0].content.parts[0].text. Pegamos esse texto e o "traduzimos"
+     de volta para um objeto com JSON.parse, pronto para a ficha usar. */
   const res=await chamarGeminiComRetry(url, corpoEnvio);
   const json=await res.json();
   const texto=json?.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -643,6 +955,15 @@ Regras:
   return JSON.parse(texto);
 }
 
+/* --------------------------------------------------------------------------
+   chamarGeminiComRetry() — TENTAR DE NOVO quando a IA está sobrecarregada
+   --------------------------------------------------------------------------
+   Serviços de IA às vezes respondem "estou ocupado, tente depois". Em vez de
+   já mostrar erro, este código tenta ATÉ 3 vezes: a 1ª na hora, e se falhar
+   espera ~0,9s e tenta de novo, depois ~1,8s. Isso resolve a maioria das
+   falhas passageiras (códigos 429/500/502/503/504 = sobrecarga/instabilidade).
+   Se o erro for de OUTRO tipo (ex.: chave errada), nem insiste — para na hora.
+   Esgotadas as tentativas, levanta um erro com uma mensagem amigável. */
 async function chamarGeminiComRetry(url, body){
   const opcoes={method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)};
   const atrasos=[0, 900, 1800];
@@ -657,6 +978,10 @@ async function chamarGeminiComRetry(url, body){
   throw new Error(await mensagemErroApi(ultimaResposta));
 }
 
+/* mensagemErroApi: traduz o código de erro técnico do servidor numa frase que
+   o aluno entende. 429 = muitas requisições (limite); 400/403 = chave inválida
+   ou sem permissão; 500/502/503/504 = serviço instável. Quando dá, anexa o
+   "detalhe" que o próprio Google mandou, para ajudar o instrutor a diagnosticar. */
 async function mensagemErroApi(res){
   let detalhe="";
   try{
@@ -669,6 +994,16 @@ async function mensagemErroApi(res){
   return "Erro na API ("+res.status+")."+detalhe;
 }
 
+/* ==========================================================================
+   SEÇÃO 4 — DESENHAR A FICHA DE RESULTADO E AS ABAS
+   ==========================================================================
+   mostrarResultado recebe "d" (os dados que a IA devolveu) e a foto. Ele:
+   - Se a IA NÃO identificou ou ficou abaixo do limiar de confiança, mostra a
+     tela gentil "Não consegui ter certeza" e para por aqui.
+   - Caso contrário, monta a ficha completa: nome, % de certeza, e as 3 abas
+     (Sobre / Localização / Habitat). As curiosidades e "parecidas" viram
+     listas. Tudo passa por escapeHtml por segurança (ver mais abaixo).
+   - Por fim, guarda a espécie no álbum e rola a tela até o resultado. */
 function mostrarResultado(d, dataUrl){
   const r=$("result"); r.classList.add("show");
   if(!d.identificado || d.confianca<LIMIAR_CONFIANCA){
@@ -700,6 +1035,11 @@ function mostrarResultado(d, dataUrl){
   adicionarAoAlbum(d, dataUrl); scrollToResult();
 }
 
+/* bindTabs: dá vida às 3 abas. Ao tocar numa aba, ela apaga o "ativo" das
+   outras, acende a sua e mostra o painel correspondente. Detalhe importante:
+   o mapa e a cena de habitat só são criados QUANDO a aba é aberta (initMapa /
+   initCena) — assim não gastamos esforço desenhando algo que talvez nem seja
+   visto, e o mapa nasce com o tamanho certo. */
 function bindTabs(r,d){
   const tabs=r.querySelectorAll(".tab"), panels=r.querySelectorAll(".tab-panel");
   tabs.forEach(t=>t.onclick=()=>{
@@ -712,16 +1052,37 @@ function bindTabs(r,d){
     if(id==="habitat") setTimeout(()=>initCena(d),50);
   });
 }
+/* mostrarErro: a versão "deu ruim" da ficha — um cartão simpático com a
+   mensagem de erro e um botão de tentar de novo. */
 function mostrarErro(msg){ const r=$("result"); r.classList.add("show"); r.innerHTML=`<div class="uncertain"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div><h3>Algo deu errado</h3><p>${escapeHtml(msg)}</p><button class="again" onclick="resetar()">Tentar de novo</button></div>`; scrollToResult(); }
+/* ÁLBUM (a galeria de descobertas):
+   adicionarAoAlbum: guarda a espécie na lista "album" — mas só uma vez por
+   espécie (compara o nome científico para não repetir). Guarda nome, foto,
+   tema, cor, ícone e biomas, que o Safari usa depois.
+   renderAlbum: redesenha as miniaturas e atualiza os contadores ("3 espécies"
+   e o número do botão Safari). Lembrete: o álbum vive só na memória da aba. */
 function adicionarAoAlbum(d,dataUrl){ if(album.some(a=>a.sci===d.nome_cientifico))return; album.unshift({nome:d.nome_popular,sci:d.nome_cientifico,img:dataUrl,tema:TEMA.id,cor:TEMA.cor,icone:TEMA.icone,biomas:d.biomas||[]}); renderAlbum(); }
 function renderAlbum(){ $("albumCount").textContent=album.length+(album.length===1?" espécie":" espécies"); const cta=$("safariCtaCount"); if(cta) cta.textContent=album.length; if(!album.length){ $("albumBody").innerHTML='<div class="album-empty">Suas identificações aparecem aqui.</div>'; return; } $("albumBody").innerHTML=`<div class="album-grid">`+album.map(a=>`<div class="album-item"><img src="${a.img}" alt=""><span>${escapeHtml(a.nome)}</span></div>`).join("")+`</div>`; }
+/* Três ajudantes finais desta seção:
+   resetar: limpa o resultado e a prévia para identificar outra foto.
+   scrollToResult: rola a tela suavemente até a ficha aparecer.
+   escapeHtml: SEGURANÇA. A resposta da IA é texto que vai para dentro do HTML.
+   Esta função "neutraliza" símbolos como < > & para que um texto não consiga
+   virar código na página por acidente. Por isso ela embrulha quase tudo que a
+   IA devolve antes de exibir. */
 function resetar(){ $("result").classList.remove("show"); $("previewWrap").classList.remove("show"); window.scrollTo({top:0,behavior:"smooth"}); }
 function scrollToResult(){ setTimeout(()=>$("result").scrollIntoView({behavior:"smooth",block:"start"}),120); }
 function escapeHtml(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-/* ============================================================
-   LOCALIZAÇÃO — mapa interativo real (Leaflet + tiles CARTO)
-   ============================================================ */
+/* ==========================================================================
+   SEÇÃO 5 — MAPA (Localização), CENA (Habitat) e SAFARI
+   ==========================================================================
+   LOCALIZAÇÃO — mapa interativo real (biblioteca Leaflet + fundo escuro CARTO)
+   --------------------------------------------------------------------------
+   BIOMAS é a "cola" do mapa: para cada bioma brasileiro guardamos uma cor, um
+   ponto central no mapa (coord = latitude/longitude) e um raio aproximado em
+   metros (para desenhar o círculo da região). A IA devolve em quais biomas a
+   espécie ocorre; o mapa acende esses círculos. */
 const BIOMAS = {
   "Amazônia":      { cor:"#3ef0a0", coord:[-3.4,-62.2], raio:820000 },
   "Cerrado":       { cor:"#d6c75a", coord:[-15.6,-49.0], raio:640000 },
@@ -732,6 +1093,9 @@ const BIOMAS = {
 };
 let mapaLeaflet=null;
 
+/* renderLocalizacao: monta o HTML da aba (a caixa onde o mapa vai entrar, um
+   resuminho, a legenda dos biomas e as "pílulas" de regiões/estados). Ainda
+   NÃO desenha o mapa — só prepara o espaço. Quem desenha é initMapa. */
 function renderLocalizacao(d){
   const biomas=(d.biomas||[]).filter(b=>BIOMAS[b]);
   const regioes=d.regioes||[];
@@ -755,6 +1119,12 @@ function renderLocalizacao(d){
     ${pills}`;
 }
 
+/* initMapa: aqui o mapa de verdade nasce (chamado quando a aba é aberta).
+   - Se a biblioteca Leaflet não carregou (sem internet), mostra um aviso.
+   - Cria o mapa, coloca o fundo escuro (tiles) e, para cada bioma da espécie,
+     desenha um círculo colorido + um alfinete (o 1º bioma é o "principal", que
+     pulsa). No fim, ajusta o zoom para enquadrar tudo. invalidateSize corrige
+     o tamanho porque o mapa começou dentro de uma aba que estava escondida. */
 function initMapa(d){
   const el=document.getElementById("mapBox");
   if(!el) return;
@@ -779,9 +1149,15 @@ function initMapa(d){
   setTimeout(()=>map.invalidateSize(),80);
 }
 
-/* ============================================================
-   HABITAT — cena fotográfica real + variação de luz (período)
-   ============================================================ */
+/* --------------------------------------------------------------------------
+   HABITAT — cena fotográfica real + variação de luz (período do dia)
+   --------------------------------------------------------------------------
+   CENARIOS: para cada tipo de ambiente (floresta amazônica, cerrado, rio...)
+   guardamos um nome bonito e o código de uma foto real (do banco Unsplash).
+   PERIODOS: os quatro horários (dia, amanhecer, crepúsculo, noite), cada um
+   com um "filtro" de cor que muda o clima da foto. A IA escolhe o cenário e o
+   período mais combinados com a espécie; o aluno pode trocar o período nos
+   botões da cena. fotoCenario monta o endereço final da imagem. */
 const CENARIOS = {
   floresta_amazonica:{ nome:"Floresta Amazônica",   foto:"photo-1591081658714-f576fb7ea3ed" },
   mata_atlantica:    { nome:"Mata Atlântica",       foto:"photo-1448375240586-882707db888b" },
@@ -802,7 +1178,10 @@ const PERIODOS = {
 };
 function fotoCenario(id){ const c=CENARIOS[id]||CENARIOS.floresta_amazonica; return `https://images.unsplash.com/${c.foto}?auto=format&fit=crop&w=1100&q=78`; }
 
-/* partículas (pólen de dia / vaga-lumes à noite) — geradas por cena */
+/* motesHtml: gera as partículas que flutuam na cena (pólen de dia, vaga-lumes
+   à noite). É puramente decorativo: faz uma continha simples para espalhar 14
+   pontinhos em posições e velocidades variadas. O "seed" só garante que cada
+   bioma tenha um padrão um pouco diferente. */
 function motesHtml(seed){
   const N=14; let out="";
   for(let i=0;i<N;i++){
@@ -815,6 +1194,10 @@ function motesHtml(seed){
   return out;
 }
 
+/* renderHabitat: monta o HTML da aba Habitat — o espaço da cena/safari, a
+   descrição do habitat que a IA escreveu, a curiosidade, os "companheiros"
+   (espécies que dividem o ambiente) e os elementos do cenário. A cena viva em
+   si é montada depois por initCena. */
 function renderHabitat(d){
   const elementos = d.elementos_cenario||[];
   const companheiros = (d.companheiros_habitat||[]).slice(0,5);
@@ -835,25 +1218,45 @@ function renderHabitat(d){
   `;
 }
 
+/* initCena: ao abrir a aba Habitat, escolhe o bioma principal da espécie e
+   manda o "motor do safari" (abrirSafariBox) montar a cena já com a espécie
+   atual destacada e no período que a IA sugeriu. */
 function initCena(d){
   const biomaInicial = (d.biomas&&d.biomas[0]&&BIOMAS[d.biomas[0]]) ? d.biomas[0] : "Amazônia";
   abrirSafariBox("habitatSafariBox", album, biomaInicial, d.nome_cientifico, d.cenario_periodo);
 }
 
-/* ============================================================
-   SAFARI — coleção viva agrupada por bioma. Fauna "navega" pela
-   cena, flora/fungos ficam "plantados" num canteiro no rodapé.
-   ============================================================ */
+/* --------------------------------------------------------------------------
+   SAFARI — a coleção viva, agrupada por bioma
+   --------------------------------------------------------------------------
+   Aqui as espécies do álbum ganham vida numa cena: os ANIMAIS (fauna)
+   caminham atravessando a tela, e as PLANTAS/FUNGOS (flora) ficam "plantados"
+   num canteiro na frente. O mesmo motor é usado em dois lugares: na aba
+   Habitat (mostrando o bioma da espécie atual) e na tela cheia do Safari.
+
+   BIOMA_CENARIO: liga o nome do bioma ao tipo de cenário/foto.
+   safariEstados: lembra, para cada caixa de safari na tela, qual bioma está
+   selecionado, qual espécie destacar e qual período — para conseguir
+   redesenhar quando o aluno troca de bioma ou de horário. */
 const BIOMA_CENARIO = {
   "Amazônia":"floresta_amazonica", "Cerrado":"cerrado", "Mata Atlântica":"mata_atlantica",
   "Caatinga":"caatinga", "Pampa":"pampa", "Pantanal":"pantanal"
 };
 const safariEstados = {};
 
+/* Três ajudantes do safari:
+   ehFauna: decide se um item é BICHO (vai caminhar) ou planta/fungo (fica
+   plantado), olhando se o reino começa com "Animalia".
+   itensDoBioma: filtra os itens do álbum que ocorrem num dado bioma.
+   slugBioma: transforma "Mata Atlântica" em "mata-atlantica" (sem acento nem
+   espaço) para usar como id seguro nos atalhos de rolagem. */
 function ehFauna(temaId){ return (REINO[temaId]||"").startsWith("Animalia"); }
 function itensDoBioma(itens, biomaNome){ return itens.filter(it=>(it.biomas||[]).includes(biomaNome)); }
 function slugBioma(s){ return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-"); }
 
+/* montarSwitcherBiomas: monta as "pílulas" de bioma no topo da cena, cada uma
+   mostrando quantas espécies o aluno já tem naquele bioma; a ativa fica
+   destacada. */
 function montarSwitcherBiomas(itens, ativa){
   return `<div class="biome-switcher">${Object.entries(BIOMAS).map(([nome,b])=>{
     const n=itensDoBioma(itens,nome).length;
@@ -861,6 +1264,13 @@ function montarSwitcherBiomas(itens, ativa){
   }).join("")}</div>`;
 }
 
+/* montarCenaBioma: o coração visual do safari. Recebe um bioma e os itens, e
+   monta TODA a cena daquele bioma: a foto de fundo, as camadas de luz do
+   período, os bichos que caminham (roam), as plantas plantadas (garden), os
+   botões de período e o rótulo com a contagem. As continhas com %, lane, spd,
+   delay só servem para espalhar os bichos em alturas/velocidades diferentes,
+   para parecer natural. Se não houver nada no bioma, mostra um convite a
+   identificar algo de lá. */
 function montarCenaBioma(biomaNome, itens, opts){
   opts = opts || {};
   const cenarioKey = BIOMA_CENARIO[biomaNome] || "floresta_amazonica";
@@ -919,6 +1329,9 @@ function montarCenaBioma(biomaNome, itens, opts){
   </div>`;
 }
 
+/* bindControlesCena: liga os botões de período (Dia/Amanhecer/Crepúsculo/
+   Noite) de cada cena. Ao clicar, troca a classe per-* da cena (o que muda
+   toda a iluminação via CSS) e atualiza o rótulo. */
 function bindControlesCena(root){
   root.querySelectorAll(".scene").forEach(scene=>{
     scene.querySelectorAll(".scene-controls button").forEach(b=>{
@@ -934,6 +1347,10 @@ function bindControlesCena(root){
   });
 }
 
+/* abrirSafariBox / desenharSafariBox: a dupla que controla uma caixa de safari.
+   abrirSafariBox guarda o estado inicial (itens, bioma, destaque, período) e
+   desenharSafariBox efetivamente pinta a caixa e liga os botões — incluindo o
+   troca-bioma, que apenas atualiza o estado e manda redesenhar. */
 function abrirSafariBox(containerId, itens, biomaInicial, highlightSci, periodoInicial){
   safariEstados[containerId] = {
     itens, ativa: BIOMAS[biomaInicial] ? biomaInicial : "Amazônia",
@@ -950,6 +1367,9 @@ function desenharSafariBox(containerId){
   bindControlesCena(el);
 }
 
+/* renderSafariCompleto: monta a TELA cheia do Safari. Ordena os biomas do que
+   tem mais descobertas para o que tem menos, cria os atalhos de rolagem no
+   topo (safariJumpNav) e, para cada bioma, uma seção com sua cena. */
 function renderSafariCompleto(){
   const itens = album;
   const ordem = Object.keys(BIOMAS).sort((a,b)=>itensDoBioma(itens,b).length-itensDoBioma(itens,a).length);
@@ -965,6 +1385,8 @@ function renderSafariCompleto(){
   bindControlesCena($("safariFull"));
 }
 
+/* ÚLTIMA LINHA, MAS A QUE DÁ A PARTIDA: desenha o catálogo de temas assim que
+   a página termina de carregar. Sem esta chamada, a grade ficaria vazia. */
 renderCatalog();
 </script>
 </body>
