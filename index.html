@@ -259,8 +259,9 @@ input[type=file]{display:none}
 .modal-card h3{font-family:'Fraunces',serif;font-size:22px;margin-bottom:6px}
 .modal-card p{color:var(--text-dim);font-size:13px;line-height:1.5;margin-bottom:16px}
 .modal-card p a{color:var(--glow-secondary)}
-.modal-card input{width:100%;background:color-mix(in srgb,var(--glow-primary) 5%,transparent);border:1px solid var(--surface-line);border-radius:12px;padding:14px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;margin-bottom:14px}
-.modal-card input:focus{outline:none;border-color:var(--glow-primary)}
+.modal-card input,.modal-card textarea{width:100%;background:color-mix(in srgb,var(--glow-primary) 5%,transparent);border:1px solid var(--surface-line);border-radius:12px;padding:14px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;margin-bottom:14px}
+.modal-card textarea{resize:vertical;min-height:84px;line-height:1.5}
+.modal-card input:focus,.modal-card textarea:focus{outline:none;border-color:var(--glow-primary)}
 .modal-actions{display:flex;gap:10px}
 .modal-actions .btn{flex:1}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);z-index:50;background:var(--bg-1);border:1px solid var(--surface-line);color:var(--text);padding:13px 20px;border-radius:14px;font-size:13.5px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;box-shadow:0 20px 50px -20px #000}
@@ -550,15 +551,20 @@ footer{margin-top:auto;padding-top:34px;text-align:center;font-family:'Space Mon
 
 </div>
 
-<!-- JANELA DA CHAVE (modal): aparece ao clicar na engrenagem. Serve para colar
-     uma chave da API Gemini APENAS quando se testa o app localmente, sem
+<!-- JANELA DAS CHAVES (modal): aparece ao clicar na engrenagem. Serve para colar
+     chaves da API Gemini APENAS quando se testa o app localmente, sem
      deploy. No site publicado isso não é necessário — a chave já está segura no
-     servidor. O que for digitado aqui fica salvo só neste aparelho/navegador. -->
+     servidor. O que for digitado aqui fica salvo só neste aparelho/navegador.
+     Aceita MAIS DE UMA chave (uma por linha): quando a primeira estoura a cota
+     do dia, o app tenta a seguinte sozinho. Só vale a pena se cada chave vier
+     de um PROJETO diferente do Google Cloud — a cota é por projeto. -->
 <div class="modal" id="modal">
   <div class="modal-card">
-    <h3>Chave da API Gemini</h3>
-    <p>Opcional: no site publicado isso não é necessário, a chave já fica protegida no servidor. Só cole a sua aqui se estiver testando localmente (sem deploy). Pegue uma gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. Fica salva só neste dispositivo.</p>
-    <input type="password" id="keyInput" placeholder="AIza...">
+    <h3>Chaves da API Gemini</h3>
+    <p>Opcional: no site publicado isso não é necessário, a chave já fica protegida no servidor. Só cole a sua aqui se estiver testando localmente (sem deploy). Pegue uma gratuita em <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>. Ficam salvas só neste dispositivo.</p>
+    <p><strong>Uma chave por linha.</strong> Se uma ficar sem cota, o app tenta a próxima. Para isso funcionar, cada chave precisa ser de um <strong>projeto diferente</strong> — a cota gratuita é contada por projeto, não por chave.</p>
+    <p>⚠️ As chaves ficam <strong>visíveis</strong> nesta caixa. Não abra esta janela com a tela projetada para a turma.</p>
+    <textarea id="keyInput" rows="3" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="AIza... (chave 1)&#10;AIza... (chave 2)"></textarea>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="keyCancel">Cancelar</button>
       <button class="btn btn-primary" id="keySave">Salvar</button>
@@ -663,8 +669,11 @@ const TEMAS = [
    --------------------------------------------------------------------------
    MODELO: qual "cérebro" da IA usar. O gemini-2.5-flash é rápido e bom. Se a
    turma estourar o limite diário do plano gratuito, troque por
-   "gemini-2.5-flash-lite", que é mais leve e permite mais fotos por dia
-   (detalhes no GUIA-DO-INSTRUTOR).
+   "gemini-2.5-flash-lite": ele é mais leve e, principalmente, tem uma cota
+   SEPARADA (o limite gratuito é contado por modelo). No site publicado o
+   servidor já cai sozinho para o flash-lite como última tentativa, mas fixar
+   aqui economiza desde a primeira foto (detalhes na Seção 9 do
+   GUIA-DO-INSTRUTOR).
    LIMIAR_CONFIANCA: a "nota de corte". Se a IA tiver menos de 80% de certeza,
    o app não arrisca um chute — mostra a tela educada "Não consegui ter
    certeza". Suba o número para ser mais exigente, abaixe para ser mais
@@ -688,12 +697,38 @@ const LIMIAR_CONFIANCA = 80;
        chave na engrenagem. Ela fica salva só naquele navegador (localStorage)
        e é usada direto. Serve para testar rápido na máquina.
 
-   A linha abaixo só TENTA lembrar uma chave que tenha sido colada antes neste
-   navegador. Se não houver, API_KEY fica vazia — e aí o app usa o caminho (A),
+   PODE SER MAIS DE UMA CHAVE. O plano gratuito tem cota curta, e ela é contada
+   POR PROJETO do Google Cloud — não por chave. Então: duas chaves do MESMO
+   projeto dividem a MESMA cota (não adianta); duas chaves de PROJETOS
+   DIFERENTES têm cotas separadas. Colando várias (uma por linha na
+   engrenagem), o app tenta a seguinte quando uma bate no limite. No site
+   publicado, quem faz esse revezamento é o proxy (ver api/identificar.js).
+
+   As linhas abaixo só TENTAM lembrar as chaves coladas antes neste navegador.
+   Se não houver nenhuma, API_KEYS fica vazia — e aí o app usa o caminho (A),
    o proxy. (O try/catch existe porque alguns navegadores bloqueiam o
    localStorage; nesse caso seguimos sem chave, sem quebrar.) */
-let API_KEY = "";
-try { API_KEY = localStorage.getItem("gemini_key") || ""; } catch(e){}
+let API_KEYS = [];
+try {
+  /* "gemini_keys" é o formato novo (várias, separadas por linha/vírgula).
+     "gemini_key" é o formato antigo, de uma chave só — continuamos lendo para
+     quem já tinha colado a sua antes desta atualização. */
+  const guardado = localStorage.getItem("gemini_keys") || localStorage.getItem("gemini_key") || "";
+  API_KEYS = separarChaves(guardado);
+} catch(e){}
+
+/* separarChaves: transforma o texto colado na engrenagem numa lista limpa.
+   Aceita uma por linha, ou separadas por vírgula/espaço; joga fora as vazias e
+   as repetidas (colar a mesma chave duas vezes não dobra a cota — ela é a
+   mesma!). Fica antes de tudo por ser usada logo na leitura acima. */
+function separarChaves(texto){
+  const lista = [];
+  for(const parte of String(texto||"").split(/[\s,;]+/)){
+    const limpa = parte.trim();
+    if(limpa && !lista.includes(limpa)) lista.push(limpa);
+  }
+  return lista;
+}
 
 /* TEMA guarda o tema atualmente aberto (preenchido em abrirTema).
    album é a lista, só na memória da aba, das espécies já descobertas nesta
@@ -820,13 +855,22 @@ $("btnBackSafari").onclick = ()=>{
 let toastT;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
 
-/* Engrenagem e janela da chave (só úteis no teste local):
-   - gear: abre a janela já com a chave atual preenchida.
+/* Engrenagem e janela das chaves (só úteis no teste local):
+   - gear: abre a janela já com as chaves atuais preenchidas (uma por linha).
    - keyCancel: fecha sem salvar.
-   - keySave: guarda a chave digitada (sem espaços) no navegador e avisa. */
-$("gear").onclick = ()=>{ $("keyInput").value=API_KEY; $("modal").classList.add("show"); };
+   - keySave: guarda as chaves digitadas (limpas e sem repetidas) no navegador
+     e avisa quantas ficaram valendo. */
+$("gear").onclick = ()=>{ $("keyInput").value=API_KEYS.join("\n"); $("modal").classList.add("show"); };
 $("keyCancel").onclick = ()=> $("modal").classList.remove("show");
-$("keySave").onclick = ()=>{ API_KEY=$("keyInput").value.trim(); try{localStorage.setItem("gemini_key",API_KEY);}catch(e){} $("modal").classList.remove("show"); toast(API_KEY?"Chave salva.":"Chave removida."); };
+$("keySave").onclick = ()=>{
+  API_KEYS = separarChaves($("keyInput").value);
+  try{
+    localStorage.setItem("gemini_keys", API_KEYS.join("\n"));
+    localStorage.removeItem("gemini_key");   // limpa o formato antigo
+  }catch(e){}
+  $("modal").classList.remove("show");
+  toast(API_KEYS.length ? (API_KEYS.length===1 ? "Chave salva." : API_KEYS.length+" chaves salvas.") : "Chaves removidas.");
+};
 
 /* Botões de foto: "Tirar foto" e "Galeria" só disparam os seletores de imagem
    invisíveis. Quando o aluno escolhe a imagem, o evento onchange chama
@@ -839,7 +883,7 @@ $("fileGal").onchange = e => handleFile(e.target.files[0]);
    local (location.protocol === "file:") E não há chave colada, ele abre a
    janela pedindo a chave e impede a foto. No site publicado isso nunca trava,
    porque lá o proxy resolve a chave. */
-function requireKey(){ if(!API_KEY && location.protocol==="file:"){ $("modal").classList.add("show"); toast("Rodando localmente: cole sua chave da API pra testar."); return false; } return true; }
+function requireKey(){ if(!API_KEYS.length && location.protocol==="file:"){ $("modal").classList.add("show"); toast("Rodando localmente: cole sua chave da API pra testar."); return false; } return true; }
 
 /* ==========================================================================
    SEÇÃO 3 — LER A FOTO E CHAMAR A INTELIGÊNCIA ARTIFICIAL
@@ -936,19 +980,28 @@ Regras:
   };
   /* AQUI ESTÁ A DECISÃO DOS DOIS CAMINHOS (a parte de segurança):
      - SEM chave colada (usaProxy = true): mandamos para o NOSSO endereço
-       /api/identificar. O servidor é quem tem a chave e fala com o Google.
+       /api/identificar. O servidor é quem tem as chaves e fala com o Google.
        Este é o caminho do site publicado. Repare que mandamos também o nome do
        MODELO, porque o proxy precisa saber qual usar.
-     - COM chave colada (teste local): falamos DIRETO com o Google, anexando a
-       chave na URL. Só acontece quando alguém colou a chave na engrenagem. */
-  const usaProxy = !API_KEY;
-  const url = usaProxy ? "/api/identificar" : `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${API_KEY}`;
-  const corpoEnvio = usaProxy ? { modelo:MODELO, body } : body;
+     - COM chave(s) colada(s) (teste local): falamos DIRETO com o Google,
+       anexando a chave na URL. Só acontece quando alguém colou chave na
+       engrenagem.
+
+     "tentativas" é a LISTA de portas que vamos bater, em ordem. No proxy é uma
+     só (o servidor cuida do revezamento por lá). No teste local é uma por
+     chave colada: se a primeira estiver sem cota, a próxima é tentada. */
+  const usaProxy = !API_KEYS.length;
+  const tentativas = usaProxy
+    ? [{ url:"/api/identificar", corpo:{ modelo:MODELO, body } }]
+    : API_KEYS.map(chave => ({
+        url:`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${chave}`,
+        corpo: body
+      }));
   /* Enviamos e esperamos a resposta (com tentativas extras — ver retry).
      A resposta vem embrulhada; a IA coloca o texto JSON lá no fundo, em
      candidates[0].content.parts[0].text. Pegamos esse texto e o "traduzimos"
      de volta para um objeto com JSON.parse, pronto para a ficha usar. */
-  const res=await chamarGeminiComRetry(url, corpoEnvio);
+  const res=await chamarGeminiComRetry(tentativas);
   const json=await res.json();
   const texto=json?.candidates?.[0]?.content?.parts?.[0]?.text;
   if(!texto) throw new Error("A IA não retornou resposta. Tente outra foto.");
@@ -956,39 +1009,58 @@ Regras:
 }
 
 /* --------------------------------------------------------------------------
-   chamarGeminiComRetry() — TENTAR DE NOVO quando a IA está sobrecarregada
+   chamarGeminiComRetry() — TROCAR DE CHAVE e TENTAR DE NOVO
    --------------------------------------------------------------------------
-   Serviços de IA às vezes respondem "estou ocupado, tente depois". Em vez de
-   já mostrar erro, este código tenta ATÉ 3 vezes: a 1ª na hora, e se falhar
-   espera ~0,9s e tenta de novo, depois ~1,8s. Isso resolve a maioria das
-   falhas passageiras (códigos 429/500/502/503/504 = sobrecarga/instabilidade).
-   Se o erro for de OUTRO tipo (ex.: chave errada), nem insiste — para na hora.
-   Esgotadas as tentativas, levanta um erro com uma mensagem amigável. */
-async function chamarGeminiComRetry(url, body){
-  const opcoes={method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)};
+   Duas defesas em uma função só:
+
+   1) TROCAR DE CHAVE (o laço de dentro): recebe a lista de "tentativas" (uma
+      por chave, no teste local). Se a chave 1 responder "sem cota" (429), ele
+      já vai na chave 2, sem esperar. Isso só ajuda de verdade se as chaves
+      forem de PROJETOS diferentes — a cota gratuita é por projeto.
+
+   2) INSISTIR (o laço de fora): serviços de IA às vezes respondem "estou
+      ocupado, tente depois". Então damos até 3 rodadas: a 1ª na hora, depois
+      ~0,9s, depois ~1,8s. Isso resolve a maioria das falhas passageiras
+      (códigos 429/500/502/503/504 = sobrecarga/instabilidade).
+
+   Se NENHUMA tentativa da rodada deu um erro do tipo "vale insistir" (ex.:
+   todas as chaves estão erradas), ele para na hora em vez de perder tempo.
+   Esgotadas as rodadas, levanta um erro com uma mensagem amigável. */
+async function chamarGeminiComRetry(tentativas){
   const atrasos=[0, 900, 1800];
   let ultimaResposta=null;
-  for(let tentativa=0; tentativa<atrasos.length; tentativa++){
-    if(atrasos[tentativa]) await esperar(atrasos[tentativa]);
-    const res=await fetch(url, opcoes);
-    if(res.ok) return res;
-    ultimaResposta=res;
-    if(![429,500,502,503,504].includes(res.status)) break;
+  for(const atraso of atrasos){
+    if(atraso) await esperar(atraso);
+    let valeInsistir=false;
+    for(const t of tentativas){
+      const res=await fetch(t.url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(t.corpo)});
+      if(res.ok) return res;
+      ultimaResposta=res;
+      if([429,500,502,503,504].includes(res.status)) valeInsistir=true;
+    }
+    if(!valeInsistir) break;
   }
-  throw new Error(await mensagemErroApi(ultimaResposta));
+  throw new Error(await mensagemErroApi(ultimaResposta, tentativas.length));
 }
 
 /* mensagemErroApi: traduz o código de erro técnico do servidor numa frase que
    o aluno entende. 429 = muitas requisições (limite); 400/403 = chave inválida
    ou sem permissão; 500/502/503/504 = serviço instável. Quando dá, anexa o
-   "detalhe" que o próprio Google mandou, para ajudar o instrutor a diagnosticar. */
-async function mensagemErroApi(res){
+   "detalhe" que o próprio Google mandou, para ajudar o instrutor a diagnosticar.
+   "quantasChaves" serve só para a frase ficar honesta quando há mais de uma
+   chave colada: aí o limite estourou em TODAS elas. */
+async function mensagemErroApi(res, quantasChaves){
   let detalhe="";
   try{
     const erro=await res.clone().json();
     detalhe=erro?.error?.message ? " Detalhe: "+erro.error.message : "";
   }catch(e){}
-  if(res.status===429) return "Limite de requisições atingido. Tente de novo em alguns instantes."+detalhe;
+  if(res.status===429){
+    const base = quantasChaves>1
+      ? "Todas as "+quantasChaves+" chaves coladas estão sem cota agora. Cada uma precisa ser de um projeto diferente do Google Cloud — e a cota diária zera à meia-noite (hora do Pacífico)."
+      : "Limite de requisições atingido. Tente de novo em alguns instantes.";
+    return base+detalhe;
+  }
   if(res.status===400||res.status===403) return "Chave inválida ou sem permissão. Verifique na engrenagem (ou a variável GEMINI_API_KEY no servidor)."+detalhe;
   if([500,502,503,504].includes(res.status)) return "O serviço da IA ficou instável agora ("+res.status+"). Aguarde alguns segundos e tente novamente."+detalhe;
   return "Erro na API ("+res.status+")."+detalhe;

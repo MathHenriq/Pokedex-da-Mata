@@ -148,7 +148,8 @@ O caminho que uma foto percorre é simples:
                  │   envia a foto
                  ▼
    /api/identificar   (o "proxy" — roda no servidor do Vercel)
-                 │   anexa a CHAVE secreta (GEMINI_API_KEY)
+                 │   anexa uma CHAVE secreta (GEMINI_API_KEY…)
+                 │   e troca de chave sozinho se a cota estourar
                  ▼
    API do Google Gemini   (a inteligência artificial)
                  │   devolve nome, curiosidades, biomas, habitat…
@@ -189,14 +190,29 @@ Fora o Git (Seção 1), não é preciso instalar programas de desenvolvedor. O r
 
 ---
 
-## 4. Criar 1 projeto no Google Cloud por turma e gerar a chave do Gemini
+## 4. Criar os projetos no Google Cloud e gerar as chaves do Gemini
 
-**Por que 1 projeto por turma?** O plano gratuito tem um **limite diário** de
-requisições. Se cada turma tiver o seu próprio projeto (e sua própria chave), o
-uso de uma turma **não derruba** a outra — a cota fica isolada. Também fica mais
-fácil desativar a chave de uma turma específica depois do curso.
+### A regra de ouro: **a cota é por PROJETO, não por chave**
 
-Passo a passo (a forma mais simples é pelo Google AI Studio):
+Esta é a informação mais importante deste guia, e a que mais causa dor de
+cabeça. O Google conta o limite gratuito **por projeto do Google Cloud**, por
+modelo e por dia. Consequência prática:
+
+| O que você faz | Ganha cota? |
+|---|---|
+| Criar 3 chaves dentro do **mesmo** projeto | ❌ **Não.** As 3 dividem a mesma cota. |
+| Criar 1 chave em cada um de **3 projetos** | ✅ **Sim.** Três cotas separadas. |
+| Usar a mesma chave em 2 sites diferentes | ❌ Não. Continua a mesma cota. |
+
+Ou seja: **"ter mais chaves" só ajuda se cada chave vier de um projeto
+diferente.** É exatamente isso que o app agora sabe fazer sozinho (Seção 5).
+
+**Por que 1 projeto por turma?** Se cada turma tiver o seu próprio projeto (e
+sua própria chave), o uso de uma turma **não derruba** a outra — a cota fica
+isolada. Também fica mais fácil desativar a chave de uma turma específica
+depois do curso.
+
+### Passo a passo (pelo Google AI Studio)
 
 1. Acesse **https://aistudio.google.com/apikey** e entre com a conta Google.
 2. Clique em **"Create API key"** (Criar chave de API).
@@ -208,12 +224,17 @@ Passo a passo (a forma mais simples é pelo Google AI Studio):
    como uma senha: **não** mande por grupo público, **não** coloque em
    slides, **não** suba para o GitHub.
 
+Para ter uma **segunda chave de reserva**, repita os passos 2 a 5 e, no passo 3,
+crie **outro projeto** (`pokedex-turma-7A-reserva`). Se o AI Studio não oferecer
+a opção "Create a new project", veja a Seção 9.2 — é o problema mais comum.
+
 > Se preferir o console completo do Google Cloud
 > (https://console.cloud.google.com), o equivalente é: criar um projeto novo →
 > ativar a **"Generative Language API"** → criar uma credencial do tipo
 > **API key**. O AI Studio acima já faz isso por você de forma mais curta.
 
-Repita esse processo **uma vez por turma**.
+Repita esse processo **uma vez por turma** (e mais uma vez, em outro projeto,
+se quiser a chave reserva).
 
 ---
 
@@ -242,6 +263,40 @@ quando precisa.
 > procura (`process.env.GEMINI_API_KEY` no arquivo `api/identificar.js`).
 > Se digitar diferente, o app vai responder *"GEMINI_API_KEY não configurada no
 > servidor."*
+
+### 5.1 — Chaves de reserva (revezamento automático)
+
+O proxy aceita **várias chaves** e troca de chave sozinho quando uma bate no
+limite. Basta criar mais variáveis, do mesmo jeito do passo 3 acima:
+
+| Nome da variável | Valor |
+|---|---|
+| `GEMINI_API_KEY` | a chave principal (projeto 1) |
+| `GEMINI_API_KEY_2` | a chave reserva (projeto 2) |
+| `GEMINI_API_KEY_3` | mais uma reserva (projeto 3) — e assim até `_10` |
+
+*(Alternativa: colocar todas na `GEMINI_API_KEY` mesmo, separadas por vírgula.)*
+
+Como o proxy usa isso:
+
+- **Reveza a ordem** a cada foto — a 1ª foto começa pela chave 1, a 2ª pela
+  chave 2… Assim o gasto se espalha em vez de torrar a chave 1 primeiro.
+- **Troca na hora** se uma chave responder "sem cota" (429), "sem permissão"
+  (403) ou "inválida" (400). O aluno nem percebe.
+- **Última cartada:** se *todas* as chaves estourarem a cota do modelo, ele
+  tenta de novo com o `gemini-2.5-flash-lite`, que tem cota própria. Para
+  desligar isso, crie a variável `GEMINI_MODELO_RESERVA` vazia.
+
+> ⚠️ **Só funciona se as chaves forem de projetos diferentes** (Seção 4). Duas
+> chaves do mesmo projeto dividem a mesma cota e vão estourar juntas.
+
+**Como conferir se está revezando:** abra o site, aperte `F12` → aba
+**Network** → tire uma foto → clique em `identificar` → veja em **Response
+Headers** o `X-Chave-Usada` (o *número* da chave, nunca o valor) e o
+`X-Modelo-Usado`. Se aparecer `X-Modelo-Usado: gemini-2.5-flash-lite`, é sinal
+de que as chaves principais já estão no limite.
+
+Lembre-se: **variável nova só vale depois de um deploy novo** (Redeploy).
 
 ---
 
@@ -291,6 +346,9 @@ confusão na hora de testar.
 - Nesse caso, clique na **engrenagem** (canto superior direito), cole a sua
   chave `AIza...` e salve. Ela fica guardada **só naquele navegador**
   (tecnologia `localStorage`) e o app passa a falar direto com o Google.
+- Dá para colar **mais de uma chave, uma por linha**: se a primeira ficar sem
+  cota, o app tenta a seguinte sozinho — desde que sejam de **projetos
+  diferentes** (Seção 4).
 - O app percebe sozinho que está rodando local (endereço começa com `file:`) e
   só aí ele exige a chave. Se você não colar nada, ele te lembra com um aviso.
 
@@ -304,7 +362,9 @@ confusão na hora de testar.
 > **Cuidado ao demonstrar com a turma:** se você colar a chave na engrenagem de
 > um computador compartilhado, ela fica salva naquele navegador. Em
 > equipamentos de uso comum, prefira sempre o **site publicado**, que não pede
-> chave nenhuma do aluno.
+> chave nenhuma do aluno. E, como a janela agora aceita várias chaves, ela as
+> mostra **em texto** (não mais como senha) — **não abra a engrenagem com a
+> tela projetada** para a turma.
 
 ---
 
@@ -371,42 +431,122 @@ Dois cuidados ao escolher:
 
 ---
 
-## 9. Quota do plano gratuito — e o que fazer se estourar
+## 9. Quota do plano gratuito — o guia de sobrevivência
 
-O plano gratuito do Gemini tem **limites** (quantas fotos por minuto e por dia).
-Numa turma inteira identificando ao mesmo tempo, é possível bater no teto. O
-sintoma é o app mostrar:
+Esta é a seção para ler **antes** da aula. A cota gratuita do Gemini é curta e
+o Google já a reduziu mais de uma vez, então vale entender como ela funciona em
+vez de descobrir no meio da atividade.
 
-> *"Limite de requisições atingido. Tente de novo em alguns instantes."*
+### 9.1 — Como a cota funciona (e o mito das "várias chaves")
 
-(Isso é o erro **429** vindo do Google.) O app **já tenta sozinho de novo** umas
-vezes antes de mostrar esse aviso, então picos pequenos costumam se resolver.
+A cota tem **três contadores** ao mesmo tempo, e estourar **qualquer um** deles
+já derruba a foto com erro **429**:
 
-Se estourar com frequência, as saídas são:
+- **RPM** — requisições por minuto (a turma toda apertando o botão junto);
+- **RPD** — requisições por **dia**, que zera à **meia-noite do Pacífico**
+  (± 4h ou 5h da manhã no Brasil);
+- **TPM** — tokens por minuto (foto é "cara" em tokens).
 
-1. **Trocar para um modelo mais leve.** No `index.html`, procure a linha:
+E o ponto que engana quase todo mundo:
 
-   ```js
-   const MODELO = "gemini-2.5-flash";   // troque por "gemini-2.5-flash-lite" pra mais requisições/dia
-   ```
+> **A cota é contada por PROJETO do Google Cloud, por modelo — não por chave.**
+> Criar 5 chaves no mesmo projeto dá 5 chaves com **a mesma** cota.
 
-   Troque por:
+O erro que aparece na tela conta exatamente qual contador estourou. Neste, por
+exemplo:
+
+```
+Quota exceeded for metric: generate_content_free_tier_requests,
+limit: 20, model: gemini-2.5-flash
+```
+
+…o limite atingido foi de **20 requisições no plano gratuito para o modelo
+`gemini-2.5-flash`**. Repare que ele nomeia o **modelo**: o
+`gemini-2.5-flash-lite` tem contador **separado** — por isso trocar de modelo
+funciona como respiro.
+
+**Confira os seus limites reais** (eles mudam e variam por conta) em
+**https://aistudio.google.com/app/rate-limits** ou https://ai.dev/rate-limit,
+com o projeto certo selecionado no alto da página.
+
+### 9.2 — "Tentei criar outra chave e não deixou"
+
+Três causas, em ordem de frequência:
+
+1. **Você criou a chave, mas no mesmo projeto.** Deu certo, só não adiantou —
+   veja a tabela da Seção 4. Ao clicar em "Create API key", é preciso escolher
+   **"Create a new project"**. Se essa opção não aparece, crie o projeto
+   primeiro em **https://console.cloud.google.com/projectcreate**, depois volte
+   ao AI Studio e aponte a chave para ele.
+2. **A conta é gerenciada por uma escola/empresa (Google Workspace).** É o caso
+   clássico do *"na outra conta está desabilitada"*: o administrador do domínio
+   pode ter bloqueado o AI Studio, a API do Gemini ou a criação de projetos no
+   Google Cloud. Sintomas: o botão fica cinza, some, ou dá "acesso negado" /
+   "serviço não disponível para sua organização".
+   **Solução:** use uma conta **`@gmail.com` pessoal** para gerar as chaves do
+   curso, ou peça ao administrador de TI da escola para liberar o serviço.
+   *Não insista na conta institucional* — isso não se resolve do lado do app.
+3. **Limite de projetos da conta.** Uma conta Google nova tem um teto de
+   projetos no Cloud. Apague projetos velhos
+   (https://console.cloud.google.com/cloud-resource-manager) ou use outra conta.
+
+### 9.3 — O que fazer quando estourar (na ordem)
+
+O sintoma é o app mostrar *"Limite de requisições atingido…"*. O app **já tenta
+sozinho de novo** algumas vezes e **já troca de chave** antes de desistir, então
+picos pequenos se resolvem sozinhos.
+
+1. **Configure chaves de reserva** — Seção 5.1. É a melhor defesa: 3 projetos =
+   3 cotas, com troca automática. Faça isso *antes* da aula.
+2. **Troque o modelo** para o mais leve (cota própria e maior). No `index.html`:
 
    ```js
    const MODELO = "gemini-2.5-flash-lite";
    ```
 
-   O `flash-lite` é mais econômico e **permite mais requisições por dia**. A
-   qualidade continua boa para o uso em sala.
+   A qualidade continua boa para o uso em sala. *(O proxy já cai para o
+   `flash-lite` sozinho como última tentativa, mas fixar aqui economiza desde
+   a primeira foto.)*
+3. **Escalone o uso:** a turma toda disparando no mesmo minuto estoura o RPM
+   mesmo com cota diária sobrando. Faça em levas de 4–5 alunos, ou peça que
+   fotografem primeiro e identifiquem depois.
+4. **Isole por turma** (Seção 4): uma turma não come a cota da outra.
+5. **Ative o faturamento (Tier 1)** no projeto — veja 9.4.
 
-2. **Isolar por turma** (já recomendado na Seção 4): uma turma não consome a
-   cota da outra.
+### 9.4 — A saída definitiva: ativar faturamento (Tier 1)
 
-3. **Escalonar o uso:** evitar que a turma toda dispare no mesmo minuto; fazer
-   em pequenas levas.
+Se o projeto é a espinha dorsal do curso, **não dependa do plano gratuito**.
+Basta vincular um cartão ao projeto do Google Cloud
+(https://aistudio.google.com/apikey → **"Set up billing"**) para o projeto subir
+automaticamente para o **Tier 1**, com limites dezenas de vezes maiores.
 
-4. *(Se o projeto crescer muito)* avaliar ativar faturamento no Google Cloud
-   para subir os limites — normalmente desnecessário para uma turma.
+Vale a pena saber:
+
+- Você paga **só pelo que usar**, por token. Identificar uma foto com o
+  `flash-lite` custa uma fração de centavo — uma turma inteira numa aula tende
+  a custar **centavos**, não reais.
+- Dá para **definir um limite de gastos** no Google Cloud (Billing → Budgets &
+  alerts) e receber alerta por e-mail, para dormir tranquilo.
+- Recomendação prática: ative o faturamento **na sua conta de instrutor**, que
+  é a que roda a demonstração da aula, e deixe os alunos no plano gratuito.
+
+### 9.5 — Planejando a turma: cada aluno com o SEU projeto
+
+Como cada aluno vai criar o próprio projeto (Vercel + chave), a conta fecha bem:
+
+- Cada aluno usa a **própria conta Google** → **próprio projeto** → **própria
+  cota**. Um aluno estourar o limite **não afeta** os outros. Essa é a
+  arquitetura certa, e ela já resolve 90% do problema.
+- **Não** distribua a sua chave para a turma inteira: além do risco de
+  vazamento, todos passam a dividir **uma** cota — e ela acaba em minutos.
+- **Combine com antecedência** que a conta usada precisa ser **pessoal
+  (`@gmail.com`)**, não a institucional da escola (motivo em 9.2). Peça que
+  criem a chave **em casa, um dia antes** — assim os problemas de conta
+  aparecem antes da aula, e não durante.
+- Leve um **plano B**: seu projeto com faturamento ativo (9.4) e chaves reserva
+  configuradas, para demonstrar no telão se a chave de alguém falhar.
+- Lembre à turma que a cota diária **zera de madrugada**: quem estourou hoje
+  volta a ter as fotos amanhã.
 
 ---
 
@@ -448,8 +588,11 @@ Recomendações para conduzir com a turma:
 | Lista de temas (cada aluno mexe) | `index.html`, procure `const TEMAS = [` |
 | Qual modelo da IA usar | `index.html`, linha `const MODELO = …` |
 | Nota de corte da confiança | `index.html`, `const LIMIAR_CONFIANCA = 80` |
-| O proxy que guarda a chave | `api/identificar.js` |
+| O proxy que guarda as chaves | `api/identificar.js` |
 | A chave secreta | Vercel → Settings → Environment Variables → `GEMINI_API_KEY` |
+| As chaves de reserva | Mesmo lugar → `GEMINI_API_KEY_2`, `_3`… (Seção 5.1) |
+| Modelo usado quando a cota acaba | Vercel → `GEMINI_MODELO_RESERVA` (padrão: `gemini-2.5-flash-lite`) |
+| Ver os limites da sua conta | https://aistudio.google.com/app/rate-limits |
 | Baixar/atualizar o código | `git clone` / `git pull origin main` (Seção 1) |
 
 Bom curso! 🌱
