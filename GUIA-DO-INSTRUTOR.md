@@ -479,16 +479,48 @@ Três causas, em ordem de frequência:
    primeiro em **https://console.cloud.google.com/projectcreate**, depois volte
    ao AI Studio e aponte a chave para ele.
 2. **A conta é gerenciada por uma escola/empresa (Google Workspace).** É o caso
-   clássico do *"na outra conta está desabilitada"*: o administrador do domínio
-   pode ter bloqueado o AI Studio, a API do Gemini ou a criação de projetos no
-   Google Cloud. Sintomas: o botão fica cinza, some, ou dá "acesso negado" /
-   "serviço não disponível para sua organização".
-   **Solução:** use uma conta **`@gmail.com` pessoal** para gerar as chaves do
-   curso, ou peça ao administrador de TI da escola para liberar o serviço.
-   *Não insista na conta institucional* — isso não se resolve do lado do app.
+   clássico do *"na outra conta está desabilitada"* e do **botão "Create API
+   Key" cinza**. Vale a pena entender, porque é o problema que mais derruba
+   turma inteira — e **criar um projeto novo NÃO resolve**. Detalhes em 9.2.1.
 3. **Limite de projetos da conta.** Uma conta Google nova tem um teto de
    projetos no Cloud. Apague projetos velhos
    (https://console.cloud.google.com/cloud-resource-manager) ou use outra conta.
+
+#### 9.2.1 — O botão "Create API Key" está cinza (política da organização)
+
+Sintoma exato: a página abre normalmente, mas o botão de criar a chave está
+**desabilitado**, sem mensagem de erro. Acontece igual num projeto recém-criado.
+
+**Por quê:** as chaves novas do Gemini são **vinculadas a uma service account**,
+e existe uma restrição chamada `iam.managed.disableServiceAccountApiKeyCreation`
+que vem **ativada por padrão em organizações** do Google Cloud. Contas de
+escola/empresa (Workspace) ficam dentro de uma organização, e a política é
+**herdada por todos os projetos filhos**. Ou seja: qualquer projeto que você
+criar com essa conta já nasce bloqueado.
+
+**Como confirmar (30 segundos):**
+
+1. **Passe o mouse por cima do botão cinza.** O aviso costuma dizer *"You do not
+   have permission to create a key in this project"*.
+2. Abra o **seletor de projeto** no topo. Se aparecer o nome da escola como
+   **organização** acima do projeto, é isso mesmo.
+
+**Como resolver**, em ordem de praticidade:
+
+1. **Use uma conta `@gmail.com` pessoal.** Projetos criados por conta pessoal
+   nascem **sem organização** — sem política herdada, botão liberado. É a saída
+   que a própria documentação do Google sugere: *"criar um novo projeto do
+   Google Cloud que não esteja associado a uma organização"*.
+2. **Peça à TI da escola** para marcar a política como *Not enforced* (dá para
+   sobrescrever no nível do projeto, em IAM & Admin → Organization policies) e
+   para te dar o papel de **Editor** no projeto.
+3. Insistir na conta institucional sem 1 ou 2 não vai funcionar. **Nenhum ajuste
+   no código deste projeto resolve isso** — é permissão da conta.
+
+> **Atenção a qual tela você está usando.** A chave gratuita do curso sai em
+> **https://aistudio.google.com/apikey**. A tela do **"Agent Platform"** no
+> console do Google Cloud (Configurações → Chaves de API) é o produto
+> *enterprise*, com outro fluxo e cobrança — não é o caminho deste guia.
 
 ### 9.3 — O que fazer quando estourar (na ordem)
 
@@ -540,9 +572,15 @@ Como cada aluno vai criar o próprio projeto (Vercel + chave), a conta fecha bem
 - **Não** distribua a sua chave para a turma inteira: além do risco de
   vazamento, todos passam a dividir **uma** cota — e ela acaba em minutos.
 - **Combine com antecedência** que a conta usada precisa ser **pessoal
-  (`@gmail.com`)**, não a institucional da escola (motivo em 9.2). Peça que
-  criem a chave **em casa, um dia antes** — assim os problemas de conta
-  aparecem antes da aula, e não durante.
+  (`@gmail.com`)**, não a institucional da escola. Isso é **bloqueante**, não um
+  detalhe: com a conta da escola o botão de criar a chave fica cinza para
+  **todos** os alunos ao mesmo tempo (motivo em 9.2.1). Peça que criem a chave
+  **em casa, um dia antes** — assim os problemas de conta aparecem antes da
+  aula, e não durante.
+- **Teste com um aluno-piloto** antes de levar para a turma: peça a um aluno que
+  faça o caminho inteiro (criar chave → deploy) e conte onde travou. Vale também
+  conferir se contas de menores de idade não esbarram em restrição de idade do
+  Google.
 - Leve um **plano B**: seu projeto com faturamento ativo (9.4) e chaves reserva
   configuradas, para demonstrar no telão se a chave de alguém falhar.
 - Lembre à turma que a cota diária **zera de madrugada**: quem estourou hoje
