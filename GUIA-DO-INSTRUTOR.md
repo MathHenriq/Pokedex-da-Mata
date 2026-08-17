@@ -219,10 +219,18 @@ depois do curso.
 3. Quando ele pedir o projeto, escolha **"Create a new project"** (Criar novo
    projeto) e dê um nome que identifique a turma, por exemplo
    `pokedex-turma-7A`. *(Assim cada turma tem o seu projeto = cota isolada.)*
-4. Confirme. Ele vai gerar uma chave que **começa com `AIza...`**.
+4. Confirme. Ele vai gerar a chave. **Dois formatos são normais:** as antigas
+   começam com **`AIza...`** e as novas com **`AQ.Ab8...`**. As duas funcionam
+   igual neste app — não se assuste se a sua vier diferente da do colega.
 5. **Copie a chave e guarde em lugar seguro** (um bloco de notas privado). Trate
    como uma senha: **não** mande por grupo público, **não** coloque em
-   slides, **não** suba para o GitHub.
+   slides, **não** cole em chat/IA, **não** suba para o GitHub. Se escapar,
+   **apague a chave** no AI Studio e gere outra — é rápido e resolve.
+
+> **Confira em qual projeto cada chave nasceu.** A lista em
+> https://aistudio.google.com/apikey mostra o **projeto** de cada chave. Se duas
+> chaves mostram o mesmo projeto, elas dividem a mesma cota (e não adiantam como
+> reserva). É o erro mais comum de quem tenta "ter mais chaves".
 
 Para ter uma **segunda chave de reserva**, repita os passos 2 a 5 e, no passo 3,
 crie **outro projeto** (`pokedex-turma-7A-reserva`). Se o AI Studio não oferecer
@@ -251,7 +259,7 @@ quando precisa.
    Ambiente).
 3. Crie uma nova variável:
    - **Name** (nome): `GEMINI_API_KEY`  ← precisa ser **exatamente** isso.
-   - **Value** (valor): cole a chave `AIza...` da turma.
+   - **Value** (valor): cole a chave da turma (`AIza...` ou `AQ.Ab8...`).
    - **Environments**: deixe marcado **Production** (e, se quiser, Preview e
      Development também).
 4. Clique em **Save** (Salvar).
@@ -344,7 +352,7 @@ confusão na hora de testar.
 ### Teste local (abrir o `index.html` direto, sem publicar)
 - Não existe servidor, então não há proxy.
 - Nesse caso, clique na **engrenagem** (canto superior direito), cole a sua
-  chave `AIza...` e salve. Ela fica guardada **só naquele navegador**
+  chave (`AIza...` ou `AQ.Ab8...`) e salve. Ela fica guardada **só naquele navegador**
   (tecnologia `localStorage`) e o app passa a falar direto com o Google.
 - Dá para colar **mais de uma chave, uma por linha**: se a primeira ficar sem
   cota, o app tenta a seguinte sozinho — desde que sejam de **projetos
