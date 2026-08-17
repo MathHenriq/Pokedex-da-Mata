@@ -32,13 +32,17 @@
 //  Configurar só a GEMINI_API_KEY continua funcionando exatamente como antes.
 const MODELO_VALIDO = /^[a-zA-Z0-9.\-]+$/;
 
-//  Modelo de reserva: se TODAS as chaves estourarem a cota do modelo pedido, o
-//  proxy tenta de novo com este modelo mais leve, que tem cota PRÓPRIA (a cota
-//  é contada por modelo). É a última cartada antes de mostrar erro ao aluno.
+//  Modelo de reserva: usado como última cartada em DOIS casos —
+//   (1) todas as chaves estouraram a cota do modelo pedido (a cota é contada
+//       por modelo, então o reserva tem contador próprio);
+//   (2) o modelo pedido foi APOSENTADO pelo Google (erro 404 "no longer
+//       available"). Isso acontece de tempos em tempos, e sem esta rede de
+//       proteção o app quebraria no meio da aula. Ele continua funcionando
+//       com o reserva enquanto o instrutor não atualiza o nome no index.html.
 //  Para desligar, crie a variável GEMINI_MODELO_RESERVA vazia no Vercel.
 const MODELO_RESERVA = process.env.GEMINI_MODELO_RESERVA !== undefined
   ? process.env.GEMINI_MODELO_RESERVA.trim()
-  : "gemini-2.5-flash-lite";
+  : "gemini-3.5-flash-lite";
 
 // Status que significam "essa chave não pode agora, tente outra":
 //   429 = estourou a cota / muitas requisições
@@ -131,6 +135,7 @@ module.exports = async (req, res) => {
 
   let ultima = null;          // a última resposta ruim, para devolver ao app
   let houveCotaEstourada = false;  // alguma chave respondeu 429?
+  let modeloAposentado = false;    // o modelo pedido não existe mais (404)?
 
   for (const modeloAtual of modelos) {
     for (let i = 0; i < chaves.length; i++) {
@@ -151,6 +156,10 @@ module.exports = async (req, res) => {
 
       ultima = r;
       if (r.status === 429) houveCotaEstourada = true;
+      // 404 = o modelo não existe (ou foi aposentado). Não adianta tentar as
+      // outras chaves: o problema é o MODELO, não a chave. Saímos do laço das
+      // chaves para ir direto ao modelo de reserva.
+      if (r.status === 404) { modeloAposentado = true; break; }
       // Se o problema NÃO é da chave (ex.: instabilidade do Google, ou a foto
       // veio malformada), trocar de chave não resolve — paramos por aqui e
       // devolvemos o erro. O app tem o seu próprio "tentar de novo".
@@ -160,9 +169,9 @@ module.exports = async (req, res) => {
         return;
       }
     }
-    // Só vale a pena tentar o modelo de reserva se a barreira foi COTA (429).
-    // Se as chaves são inválidas, o modelo reserva vai falhar igual.
-    if (!houveCotaEstourada) break;
+    // Só vale a pena tentar o modelo de reserva se a barreira foi COTA (429) ou
+    // MODELO APOSENTADO (404). Se as chaves são inválidas, o reserva falha igual.
+    if (!houveCotaEstourada && !modeloAposentado) break;
   }
 
   // 5) Chegou aqui: todas as tentativas falharam. Devolvemos o último erro do
@@ -173,6 +182,12 @@ module.exports = async (req, res) => {
     data.error.message =
       `Todas as ${chaves.length} chaves configuradas estão sem cota agora. ` +
       (data.error.message || "");
+  }
+  if (modeloAposentado && data && data.error) {
+    data.error.message =
+      `O modelo "${modelo}" não está mais disponível, e o reserva ` +
+      `("${MODELO_RESERVA}") também falhou. Atualize a linha const MODELO no ` +
+      `index.html com o modelo sugerido abaixo. ` + (data.error.message || "");
   }
   res.setHeader("X-Chaves-Configuradas", String(chaves.length));
   res.status(ultima ? ultima.status : 503).json(data);

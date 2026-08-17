@@ -292,7 +292,7 @@ Como o proxy usa isso:
 - **Troca na hora** se uma chave responder "sem cota" (429), "sem permissão"
   (403) ou "inválida" (400). O aluno nem percebe.
 - **Última cartada:** se *todas* as chaves estourarem a cota do modelo, ele
-  tenta de novo com o `gemini-2.5-flash-lite`, que tem cota própria. Para
+  tenta de novo com o `gemini-3.5-flash-lite`, que tem cota própria. Para
   desligar isso, crie a variável `GEMINI_MODELO_RESERVA` vazia.
 
 > ⚠️ **Só funciona se as chaves forem de projetos diferentes** (Seção 4). Duas
@@ -301,7 +301,7 @@ Como o proxy usa isso:
 **Como conferir se está revezando:** abra o site, aperte `F12` → aba
 **Network** → tire uma foto → clique em `identificar` → veja em **Response
 Headers** o `X-Chave-Usada` (o *número* da chave, nunca o valor) e o
-`X-Modelo-Usado`. Se aparecer `X-Modelo-Usado: gemini-2.5-flash-lite`, é sinal
+`X-Modelo-Usado`. Se aparecer `X-Modelo-Usado: gemini-3.5-flash-lite`, é sinal
 de que as chaves principais já estão no limite.
 
 Lembre-se: **variável nova só vale depois de um deploy novo** (Redeploy).
@@ -470,7 +470,7 @@ limit: 20, model: gemini-2.5-flash
 
 …o limite atingido foi de **20 requisições no plano gratuito para o modelo
 `gemini-2.5-flash`**. Repare que ele nomeia o **modelo**: o
-`gemini-2.5-flash-lite` tem contador **separado** — por isso trocar de modelo
+`gemini-3.5-flash-lite` tem contador **separado** — por isso trocar de modelo
 funciona como respiro.
 
 **Confira os seus limites reais** (eles mudam e variam por conta) em
@@ -541,7 +541,7 @@ picos pequenos se resolvem sozinhos.
 2. **Troque o modelo** para o mais leve (cota própria e maior). No `index.html`:
 
    ```js
-   const MODELO = "gemini-2.5-flash-lite";
+   const MODELO = "gemini-3.5-flash-lite";
    ```
 
    A qualidade continua boa para o uso em sala. *(O proxy já cai para o
@@ -594,6 +594,47 @@ Como cada aluno vai criar o próprio projeto (Vercel + chave), a conta fecha bem
 - Lembre à turma que a cota diária **zera de madrugada**: quem estourou hoje
   volta a ter as fotos amanhã.
 
+### 9.6 — Quando o Google APOSENTA o modelo (erro 404)
+
+De tempos em tempos o Google aposenta um modelo. O sintoma é claro e **não tem
+nada a ver com cota**:
+
+> *"Este modelo de IA foi aposentado pelo Google. Detalhe: This model
+> models/… is no longer available to new users. Please update your code to use
+> models/… for the latest features and improvements."*
+
+**Uma pegadinha importante:** modelos são aposentados **primeiro para projetos
+novos**. Ou seja, a sua chave antiga pode continuar funcionando enquanto as
+chaves recém-criadas (e as dos alunos!) já dão 404 no mesmo app. Se "funciona no
+meu e não no dos alunos", suspeite disso antes de qualquer outra coisa.
+
+**O app aguenta o tranco sozinho:** ao receber 404, o proxy cai automaticamente
+para o modelo de reserva (`GEMINI_MODELO_RESERVA`) e a aula continua. Você vai
+notar pelo cabeçalho `X-Modelo-Usado`, que passa a mostrar o reserva.
+
+**O conserto definitivo leva 1 minuto:**
+
+1. Leia o nome do modelo que o próprio erro sugere.
+2. No `index.html`, troque a linha:
+   ```js
+   const MODELO = "gemini-3.6-flash";
+   ```
+3. Publique (commit + push; o Vercel republica sozinho).
+4. Se quiser, atualize também o `GEMINI_MODELO_RESERVA` no Vercel para um
+   modelo `-lite` da mesma geração.
+
+**Como saber quais modelos a sua chave aceita**, sem chutar: abra o endereço
+abaixo no navegador, trocando `SUA_CHAVE` pela sua chave. Ele devolve a lista.
+
+```
+https://generativelanguage.googleapis.com/v1beta/models?key=SUA_CHAVE
+```
+
+> **Histórico deste projeto:** o app nasceu com `gemini-2.5-flash`. Em fevereiro
+> de 2026 esse modelo parou de aceitar projetos novos, e o projeto passou para
+> **`gemini-3.6-flash`** (reserva `gemini-3.5-flash-lite`). Se você clonou o
+> repositório antes disso, rode `git pull origin main`.
+
 ---
 
 ## 10. Avisos de segurança que já existem no app
@@ -637,8 +678,9 @@ Recomendações para conduzir com a turma:
 | O proxy que guarda as chaves | `api/identificar.js` |
 | A chave secreta | Vercel → Settings → Environment Variables → `GEMINI_API_KEY` |
 | As chaves de reserva | Mesmo lugar → `GEMINI_API_KEY_2`, `_3`… (Seção 5.1) |
-| Modelo usado quando a cota acaba | Vercel → `GEMINI_MODELO_RESERVA` (padrão: `gemini-2.5-flash-lite`) |
+| Modelo usado quando a cota acaba | Vercel → `GEMINI_MODELO_RESERVA` (padrão: `gemini-3.5-flash-lite`) |
 | Ver os limites da sua conta | https://aistudio.google.com/app/rate-limits |
+| Modelo aposentado (erro 404) | Seção 9.6 — troque `const MODELO` no `index.html` |
 | Baixar/atualizar o código | `git clone` / `git pull origin main` (Seção 1) |
 
 Bom curso! 🌱

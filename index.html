@@ -667,18 +667,24 @@ const TEMAS = [
 /* --------------------------------------------------------------------------
    CONFIGURAÇÕES GERAIS
    --------------------------------------------------------------------------
-   MODELO: qual "cérebro" da IA usar. O gemini-2.5-flash é rápido e bom. Se a
+   MODELO: qual "cérebro" da IA usar. O gemini-3.6-flash é rápido e bom. Se a
    turma estourar o limite diário do plano gratuito, troque por
-   "gemini-2.5-flash-lite": ele é mais leve e, principalmente, tem uma cota
+   "gemini-3.5-flash-lite": ele é mais leve e, principalmente, tem uma cota
    SEPARADA (o limite gratuito é contado por modelo). No site publicado o
    servidor já cai sozinho para o flash-lite como última tentativa, mas fixar
    aqui economiza desde a primeira foto (detalhes na Seção 9 do
    GUIA-DO-INSTRUTOR).
+
+   ⚠️ O Google APOSENTA modelos de tempos em tempos. Quando isso acontece, o
+   app mostra um erro 404 dizendo "no longer available" e sugerindo o
+   substituto — é só trocar o nome nesta linha. (O modelo 2.5, usado até
+   fevereiro de 2026, foi aposentado assim.) A lista do que a sua chave aceita
+   está em https://aistudio.google.com/ ou pedindo a lista de modelos à API.
    LIMIAR_CONFIANCA: a "nota de corte". Se a IA tiver menos de 80% de certeza,
    o app não arrisca um chute — mostra a tela educada "Não consegui ter
    certeza". Suba o número para ser mais exigente, abaixe para ser mais
    tolerante. */
-const MODELO = "gemini-2.5-flash";   // troque por "gemini-2.5-flash-lite" pra mais requisições/dia
+const MODELO = "gemini-3.6-flash";   // troque por "gemini-3.5-flash-lite" pra mais requisições/dia
 const LIMIAR_CONFIANCA = 80;
 
 /* --------------------------------------------------------------------------
@@ -1062,6 +1068,10 @@ async function mensagemErroApi(res, quantasChaves){
     return base+detalhe;
   }
   if(res.status===400||res.status===403) return "Chave inválida ou sem permissão. Verifique na engrenagem (ou a variável GEMINI_API_KEY no servidor)."+detalhe;
+  /* 404 = o modelo pedido não existe mais. O Google aposenta modelos de tempos
+     em tempos e o próprio erro já sugere o substituto; é só trocar o nome na
+     linha "const MODELO" lá em cima. */
+  if(res.status===404) return "Este modelo de IA foi aposentado pelo Google. Atualize a linha const MODELO no index.html com o modelo sugerido a seguir."+detalhe;
   if([500,502,503,504].includes(res.status)) return "O serviço da IA ficou instável agora ("+res.status+"). Aguarde alguns segundos e tente novamente."+detalhe;
   return "Erro na API ("+res.status+")."+detalhe;
 }
